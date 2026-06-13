@@ -4,49 +4,118 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>PharmManager</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+<!-- ✅ React -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<!-- ✅ Babel (converts JSX in browser) -->
+<script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:#f3f4f6;color:#111}
-select,input{border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:14px;width:100%;background:#fff;outline:none}
-select:focus,input:focus{border-color:#1d9e75;box-shadow:0 0 0 2px rgba(29,158,117,.15)}
-button{cursor:pointer;border-radius:8px;font-size:14px;padding:7px 14px;border:1px solid #d1d5db;background:#fff;transition:all .15s}
-.btn-green{background:#1d9e75;color:#fff;border-color:#1d9e75;font-weight:500}
-.btn-green:hover{background:#178a65}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f0faf6;color:#1a1a2e;min-height:100vh}
+
+/* ── Pharmacy color palette ── */
+:root{
+  --green:#1d9e75;--green-dark:#136b50;--green-light:#e6f4ea;
+  --teal:#0f8080;--teal-light:#e0f4f4;
+  --blue:#1565c0;--blue-light:#e3f2fd;
+  --amber:#d97706;--amber-light:#fef3c7;
+  --red:#c0392b;--red-light:#fdecea;
+  --purple:#6d28d9;--purple-light:#ede9fe;
+  --white:#ffffff;--border:#d1fae5;
+  --surface:#f0fdf4;
+}
+
+/* ── Header gradient ── */
+.header{
+  background:linear-gradient(135deg,#136b50 0%,#1d9e75 50%,#0f8080 100%);
+  padding:0 24px;display:flex;align-items:center;gap:16px;
+  box-shadow:0 2px 12px rgba(29,158,117,.3);position:sticky;top:0;z-index:100;
+}
+.header-logo{width:44px;height:44px;background:rgba(255,255,255,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;border:2px solid rgba(255,255,255,.3)}
+.header-title{color:#fff;font-size:18px;font-weight:700;letter-spacing:.3px}
+.header-sub{color:rgba(255,255,255,.8);font-size:11px;margin-top:1px}
+.header-badge{margin-left:auto;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
+
+/* ── Tabs ── */
+.tabs{background:#fff;border-bottom:2px solid #d1fae5;display:flex;overflow-x:auto;padding:0 12px;gap:2px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.tab-btn{padding:13px 18px;border:none;background:none;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;display:flex;align-items:center;gap:6px}
+.tab-btn:hover{color:var(--green);background:#f0fdf4}
+.tab-active{color:var(--green)!important;border-bottom:3px solid var(--green)!important;background:#f0fdf4!important}
+
+/* ── Cards ── */
+.card{background:#fff;border:1px solid #d1fae5;border-radius:14px;padding:18px 22px;margin-bottom:16px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.card-title{font-size:16px;font-weight:700;color:#136b50;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* ── Metrics ── */
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:22px}
+.metric{border-radius:14px;padding:16px;border:1px solid transparent;position:relative;overflow:hidden}
+.metric-g{background:linear-gradient(135deg,#e6f4ea,#d1fae5);border-color:#6ee7b7}
+.metric-r{background:linear-gradient(135deg,#fdecea,#fee2e2);border-color:#fca5a5}
+.metric-b{background:linear-gradient(135deg,#e3f2fd,#dbeafe);border-color:#93c5fd}
+.metric-a{background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fcd34d}
+.metric-p{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#c4b5fd}
+.metric-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:6px}
+.metric-value{font-size:28px;font-weight:800;line-height:1}
+.metric-sub{font-size:11px;color:#6b7280;margin-top:4px}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.bg{background:#dcfce7;color:#166534}.br{background:#fee2e2;color:#991b1b}.ba{background:#fef3c7;color:#92400e}.bb{background:#dbeafe;color:#1e40af}.bgr{background:#f3f4f6;color:#6b7280}.bp{background:#ede9fe;color:#5b21b6}.bt{background:#ccfbf1;color:#0f766e}
+
+/* ── Buttons ── */
+button{cursor:pointer;border-radius:8px;font-size:14px;padding:8px 16px;border:1.5px solid #d1d5db;background:#fff;transition:all .15s;font-weight:500}
+.btn-green{background:linear-gradient(135deg,#1d9e75,#136b50);color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(29,158,117,.3)}
+.btn-green:hover{background:linear-gradient(135deg,#136b50,#0f5e45);transform:translateY(-1px)}
 .btn-red{background:#fdecea;color:#a61c00;border-color:#fca5a5}
 .btn-blue{background:#e3f2fd;color:#0d47a1;border-color:#90caf9}
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:14px}
-.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500;white-space:nowrap}
-.bg{background:#e6f4ea;color:#2d6a4f}.br{background:#fdecea;color:#a61c00}.ba{background:#fff3e0;color:#7c4d00}.bb{background:#e3f2fd;color:#0d47a1}.bgr{background:#f3f4f6;color:#6b7280}
-table{border-collapse:collapse;width:100%}
-th,td{text-align:left;padding:8px 10px;font-size:14px;border-bottom:1px solid #e5e7eb}
-thead th{background:#f9fafb;font-size:12px;color:#6b7280;font-weight:600}
-.tab-btn{padding:10px 14px;border:none;background:none;font-size:14px;color:#6b7280;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
-.tab-active{color:#1d9e75;border-bottom:2px solid #1d9e75;font-weight:600}
-.metric{background:#f9fafb;border-radius:8px;padding:14px;border:1px solid #e5e7eb}
-.field{margin-bottom:10px}
-.flabel{font-size:13px;color:#6b7280;margin-bottom:4px}
-.warn{background:#fff3e0;color:#7c4d00;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px}
-.err{background:#fdecea;color:#a61c00;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px}
-.ok{background:#e6f4ea;color:#2d6a4f;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px}
+.btn-amber{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+.btn-outline{background:#fff;color:var(--green);border-color:var(--green)}
 
-/* Print styles */
+/* ── Forms ── */
+select,input{border:1.5px solid #d1fae5;border-radius:8px;padding:8px 12px;font-size:14px;width:100%;background:#fff;outline:none;transition:border .15s}
+select:focus,input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.12)}
+.field{margin-bottom:12px}
+.flabel{font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+
+/* ── Tables ── */
+table{border-collapse:collapse;width:100%}
+th{background:#f0fdf4;color:#136b50;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;border-bottom:2px solid #d1fae5}
+td{padding:10px 12px;font-size:14px;border-bottom:1px solid #f0fdf4}
+tbody tr:hover{background:#f9fffe}
+
+/* ── Alerts ── */
+.warn{background:linear-gradient(135deg,#fef3c7,#fde68a22);border:1px solid #fcd34d;color:#78350f;border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:14px}
+.err{background:linear-gradient(135deg,#fdecea,#fee2e222);border:1px solid #fca5a5;color:#7f1d1d;border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:14px}
+.ok{background:linear-gradient(135deg,#e6f4ea,#dcfce722);border:1px solid #6ee7b7;color:#14532d;border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:14px}
+
+/* ── Supplier color tags ── */
+.sup-Eastleigh{background:#dbeafe;color:#1e40af}
+.sup-Bilova{background:#dcfce7;color:#166534}
+.sup-Signature{background:#ede9fe;color:#5b21b6}
+.sup-Krishna{background:#fef3c7;color:#92400e}
+.sup-Medispec{background:#ccfbf1;color:#0f766e}
+.sup-Firstmile{background:#fee2e2;color:#991b1b}
+
+/* ── Print ── */
 @media print{
   .no-print{display:none!important}
-  body{background:#fff;font-size:12px}
-  .lpo-print{border:none!important;box-shadow:none!important;padding:0}
+  body{background:#fff}
+  .lpo-print{display:block!important;padding:30px 50px}
+  .card{border:none;box-shadow:none;padding:0}
 }
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root"><div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:16px;color:#1d9e75">Loading PharmManager…</div></div>
+
 <script type="text/babel">
 const {useState,useMemo}=React;
 
 const SUPPLIERS=["Eastleigh","Bilova","Signature","Krishna","Medispec","Firstmile"];
-const TABS=["Dashboard","Inventory","Price Compare","Create LPO","LPO History"];
+const SUP_ICONS={"Eastleigh":"🔵","Bilova":"🟢","Signature":"🟣","Krishna":"🟡","Medispec":"🩵","Firstmile":"🔴"};
+const TABS=[{id:"Dashboard",icon:"🏠"},{id:"Inventory",icon:"📦"},{id:"Price Compare",icon:"📊"},{id:"Create LPO",icon:"📋"},{id:"LPO History",icon:"🗂️"}];
 
 const initDrugs=[
   {id:1,name:"Amoxicillin 500mg",category:"Antibiotic",stock:120,reorderLevel:50,unit:"caps",sellingPrice:25,expiryDate:"2026-12-01"},
@@ -57,7 +126,6 @@ const initDrugs=[
   {id:6,name:"Omeprazole 20mg",category:"GI",stock:80,reorderLevel:60,unit:"caps",sellingPrice:12,expiryDate:"2027-02-01"},
 ];
 
-// prices keyed by drugId+supplier
 const initPrices=[
   {drugId:1,supplier:"Eastleigh",price:12},{drugId:1,supplier:"Bilova",price:14},{drugId:1,supplier:"Signature",price:11.5},{drugId:1,supplier:"Krishna",price:13},{drugId:1,supplier:"Medispec",price:12.5},{drugId:1,supplier:"Firstmile",price:13.5},
   {drugId:2,supplier:"Eastleigh",price:4.5},{drugId:2,supplier:"Bilova",price:5},{drugId:2,supplier:"Signature",price:4.2},{drugId:2,supplier:"Krishna",price:4.8},{drugId:2,supplier:"Medispec",price:5.2},{drugId:2,supplier:"Firstmile",price:4.6},
@@ -67,51 +135,53 @@ const initPrices=[
   {drugId:6,supplier:"Eastleigh",price:6},{drugId:6,supplier:"Bilova",price:6.5},{drugId:6,supplier:"Signature",price:5.8},{drugId:6,supplier:"Medispec",price:6.2},{drugId:6,supplier:"Firstmile",price:6.4},
 ];
 
-const initLPOs=[];
-
 function Badge({c,t}){return <span className={`badge ${c}`}>{t}</span>}
+function SupBadge({s}){return <span className={`badge sup-${s}`}>{SUP_ICONS[s]} {s}</span>}
 function F({label,children}){return <div className="field"><div className="flabel">{label}</div>{children}</div>}
-function Grid({cols,gap,children}){return <div style={{display:"grid",gridTemplateColumns:cols,gap:gap||"0 12px"}}>{children}</div>}
+function Grid2({children,cols}){return <div style={{display:"grid",gridTemplateColumns:cols||"1fr 1fr",gap:"0 14px"}}>{children}</div>}
 
 export default function App(){
   const [tab,setTab]=useState("Dashboard");
   const [drugs,setDrugs]=useState(initDrugs);
   const [prices,setPrices]=useState(initPrices);
-  const [lpos,setLpos]=useState(initLPOs);
+  const [lpos,setLpos]=useState([]);
   const [pharmacyName,setPharmacyName]=useState("My Pharmacy");
 
   const lowStock=drugs.filter(d=>d.stock<=d.reorderLevel);
   const getPrice=(drugId,supplier)=>prices.find(p=>p.drugId===drugId&&p.supplier===supplier)?.price||null;
-  const bestSupplier=drugId=>{
-    const ps=prices.filter(p=>p.drugId===drugId);
-    return ps.length?ps.reduce((a,b)=>a.price<b.price?a:b):null;
-  };
-
+  const bestSupplier=drugId=>{const ps=prices.filter(p=>p.drugId===drugId);return ps.length?ps.reduce((a,b)=>a.price<b.price?a:b):null;};
   const addDrug=d=>setDrugs(p=>[...p,{...d,id:Date.now()}]);
-  const addPrice=p=>setPrices(pr=>[...pr,p]);
   const updatePrice=(drugId,supplier,price)=>setPrices(p=>{
-    const existing=p.find(x=>x.drugId===drugId&&x.supplier===supplier);
-    return existing?p.map(x=>x.drugId===drugId&&x.supplier===supplier?{...x,price}:x):[...p,{drugId,supplier,price:Number(price)}];
+    const ex=p.find(x=>x.drugId===drugId&&x.supplier===supplier);
+    return ex?p.map(x=>x.drugId===drugId&&x.supplier===supplier?{...x,price:Number(price)}:x):[...p,{drugId,supplier,price:Number(price)}];
   });
-  const saveLPO=lpo=>setLpos(p=>[...p,{...lpo,id:Date.now(),date:new Date().toLocaleDateString("en-KE")}]);
-  const updateStock=(drugId,qty)=>setDrugs(p=>p.map(d=>d.id===drugId?{...d,stock:d.stock+Number(qty)}:d));
+  const saveLPO=lpo=>setLpos(p=>[lpo,...p]);
 
-  const shared={drugs,prices,lpos,lowStock,getPrice,bestSupplier,addDrug,addPrice,updatePrice,saveLPO,updateStock,pharmacyName,setPharmacyName,setDrugs};
+  const shared={drugs,prices,lpos,lowStock,getPrice,bestSupplier,addDrug,updatePrice,saveLPO,pharmacyName,setPharmacyName,setDrugs};
 
   return(
-    <div style={{minHeight:"100vh"}}>
-      <div className="no-print" style={{background:"#fff",borderBottom:"1px solid #e5e7eb",padding:"12px 20px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:10}}>
-        <div style={{width:36,height:36,borderRadius:8,background:"#1d9e75",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💊</div>
+    <div>
+      {/* Header */}
+      <div className="header no-print" style={{height:64}}>
+        <div className="header-logo">💊</div>
         <div>
-          <div style={{fontWeight:700,fontSize:16}}>PharmManager</div>
-          <div style={{fontSize:11,color:"#6b7280"}}>LPO & Price Comparison</div>
+          <div className="header-title">PharmManager</div>
+          <div className="header-sub">Procurement & Price Intelligence</div>
         </div>
-        {lowStock.length>0&&<div style={{marginLeft:"auto"}}><Badge c="br" t={`⚠ ${lowStock.length} low stock`}/></div>}
+        {lowStock.length>0&&<div className="header-badge">⚠ {lowStock.length} Low Stock</div>}
       </div>
-      <div className="no-print" style={{background:"#fff",borderBottom:"1px solid #e5e7eb",display:"flex",overflowX:"auto"}}>
-        {TABS.map(t=><button key={t} className={`tab-btn${tab===t?" tab-active":""}`} onClick={()=>setTab(t)}>{t}</button>)}
+
+      {/* Tabs */}
+      <div className="tabs no-print">
+        {TABS.map(t=>(
+          <button key={t.id} className={`tab-btn${tab===t.id?" tab-active":""}`} onClick={()=>setTab(t.id)}>
+            <span>{t.icon}</span>{t.id}
+          </button>
+        ))}
       </div>
-      <div style={{padding:"20px 16px",maxWidth:1100,margin:"0 auto"}}>
+
+      {/* Content */}
+      <div style={{padding:"22px 18px",maxWidth:1140,margin:"0 auto"}}>
         {tab==="Dashboard"&&<Dashboard {...shared}/>}
         {tab==="Inventory"&&<Inventory {...shared}/>}
         {tab==="Price Compare"&&<PriceCompare {...shared}/>}
@@ -122,60 +192,76 @@ export default function App(){
   );
 }
 
-/* ── Dashboard ── */
-function Dashboard({drugs,lowStock,lpos,prices,bestSupplier}){
+/* ════════════════ DASHBOARD ════════════════ */
+function Dashboard({drugs,lowStock,lpos,bestSupplier}){
   const lossItems=drugs.filter(d=>{const b=bestSupplier(d.id);return b&&b.price>=d.sellingPrice;});
   const todayLPOs=lpos.filter(l=>l.date===new Date().toLocaleDateString("en-KE")).length;
+  const totalLPOValue=lpos.reduce((s,l)=>s+l.total,0);
+
   return(
     <div>
-      <Grid cols="repeat(auto-fit,minmax(130px,1fr))" gap="12px" style={{marginBottom:20}}>
-        {[
-          {l:"Total Drugs",v:drugs.length,c:""},
-          {l:"Low Stock",v:lowStock.length,c:lowStock.length>0?"#a61c00":"#2d6a4f",s:"need reorder"},
-          {l:"LPOs Today",v:todayLPOs,c:"#0d47a1"},
-          {l:"Loss Risk Items",v:lossItems.length,c:lossItems.length>0?"#a61c00":"#2d6a4f",s:"check prices"},
-        ].map(m=>(
-          <div key={m.l} className="metric">
-            <div style={{fontSize:12,color:"#6b7280",marginBottom:4}}>{m.l}</div>
-            <div style={{fontSize:24,fontWeight:600,color:m.c||"#111"}}>{m.v}</div>
-            {m.s&&<div style={{fontSize:11,color:"#6b7280"}}>{m.s}</div>}
-          </div>
-        ))}
-      </Grid>
-      {lowStock.length>0&&<div className="card" style={{borderColor:"#fca5a5"}}>
-        <div style={{fontWeight:600,color:"#a61c00",marginBottom:10}}>⚠ Low Stock — Reorder Needed</div>
-        <table><thead><tr><th>Drug</th><th>Stock</th><th>Reorder At</th><th>Best Supplier</th><th>Best Price</th></tr></thead>
-        <tbody>{lowStock.map(d=>{const b=bestSupplier(d.id);return(
-          <tr key={d.id}>
-            <td style={{fontWeight:500}}>{d.name}</td>
-            <td style={{color:"#a61c00",fontWeight:600}}>{d.stock} {d.unit}</td>
-            <td>{d.reorderLevel}</td>
-            <td>{b?<Badge c="bg" t={b.supplier}/>:"—"}</td>
-            <td>{b?"KES "+b.price:"—"}</td>
-          </tr>
-        );})}
-        </tbody></table>
-      </div>}
-      {lpos.length>0&&<div className="card">
-        <div style={{fontWeight:600,marginBottom:10}}>Recent LPOs</div>
-        {lpos.slice().reverse().slice(0,5).map(l=>(
-          <div key={l.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #f3f4f6",fontSize:14}}>
-            <span style={{fontWeight:500}}>LPO #{l.lpoNumber}</span>
-            <span style={{color:"#6b7280"}}>{l.supplier} · {l.date}</span>
-            <span>KES {l.total.toFixed(0)}</span>
-            <Badge c={l.status==="Received"?"bg":l.status==="Cancelled"?"br":"ba"} t={l.status}/>
-          </div>
-        ))}
-      </div>}
+      <div className="metric-grid">
+        <div className="metric metric-g"><div className="metric-label">Total Drugs</div><div className="metric-value" style={{color:"#166534"}}>{drugs.length}</div><div className="metric-sub">in inventory</div></div>
+        <div className="metric metric-r"><div className="metric-label">Low Stock</div><div className="metric-value" style={{color:"#991b1b"}}>{lowStock.length}</div><div className="metric-sub">need reorder now</div></div>
+        <div className="metric metric-b"><div className="metric-label">LPOs Raised</div><div className="metric-value" style={{color:"#1e40af"}}>{lpos.length}</div><div className="metric-sub">KES {totalLPOValue.toFixed(0)} total</div></div>
+        <div className="metric metric-a"><div className="metric-label">Loss Risk</div><div className="metric-value" style={{color:"#92400e"}}>{lossItems.length}</div><div className="metric-sub">selling below cost</div></div>
+      </div>
+
+      {/* Supplier legend */}
+      <div className="card">
+        <div className="card-title">🏪 Your Suppliers</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+          {["Eastleigh","Bilova","Signature","Krishna","Medispec","Firstmile"].map(s=>(
+            <div key={s} style={{display:"flex",alignItems:"center",gap:8,background:"#f9fffe",border:"1.5px solid #d1fae5",borderRadius:10,padding:"8px 14px"}}>
+              <span style={{fontSize:20}}>{SUP_ICONS[s]}</span>
+              <span style={{fontWeight:600,fontSize:14}}>{s}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {lowStock.length>0&&(
+        <div className="card" style={{borderColor:"#fca5a5"}}>
+          <div className="card-title" style={{color:"#991b1b"}}>⚠️ Low Stock — Action Required</div>
+          <table>
+            <thead><tr><th>Drug</th><th>Current Stock</th><th>Reorder Level</th><th>Best Supplier</th><th>Best Price</th></tr></thead>
+            <tbody>{lowStock.map(d=>{const b=bestSupplier(d.id);return(
+              <tr key={d.id} style={{background:"#fff5f5"}}>
+                <td style={{fontWeight:600}}>{d.name}</td>
+                <td><span style={{color:"#991b1b",fontWeight:700}}>{d.stock} {d.unit}</span></td>
+                <td>{d.reorderLevel}</td>
+                <td>{b?<SupBadge s={b.supplier}/>:"—"}</td>
+                <td style={{fontWeight:600,color:"#166534"}}>{b?"KES "+b.price:"—"}</td>
+              </tr>
+            );})}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {lpos.length>0&&(
+        <div className="card">
+          <div className="card-title">📋 Recent LPOs</div>
+          {lpos.slice(0,5).map(l=>(
+            <div key={l.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #f0fdf4",flexWrap:"wrap",gap:8}}>
+              <span style={{fontWeight:600,color:"#136b50"}}>LPO #{l.lpoNumber}</span>
+              <SupBadge s={l.supplier}/>
+              <span style={{color:"#6b7280",fontSize:13}}>{l.date}</span>
+              <span style={{fontWeight:700}}>KES {l.total.toFixed(0)}</span>
+              <Badge c={l.status==="Received"?"bg":l.status==="Cancelled"?"br":"ba"} t={l.status}/>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-/* ── Inventory ── */
-function Inventory({drugs,bestSupplier,lowStock,addDrug,updateStock,setDrugs}){
+/* ════════════════ INVENTORY ════════════════ */
+function Inventory({drugs,bestSupplier,addDrug}){
   const [show,setShow]=useState(false);
   const [search,setSearch]=useState("");
-  const empty={name:"",category:"Other",stock:"",reorderLevel:"",unit:"tabs",sellingPrice:"",expiryDate:""};
+  const empty={name:"",category:"Antibiotic",stock:"",reorderLevel:"",unit:"tabs",sellingPrice:"",expiryDate:""};
   const [f,setF]=useState(empty);
   const filtered=drugs.filter(d=>d.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -187,370 +273,361 @@ function Inventory({drugs,bestSupplier,lowStock,addDrug,updateStock,setDrugs}){
 
   return(
     <div>
-      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
-        <input placeholder="Search drugs…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:160}}/>
+      <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"center",flexWrap:"wrap"}}>
+        <input placeholder="🔍 Search drugs…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:160}}/>
         <button className="btn-green" onClick={()=>setShow(!show)}>+ Add Drug</button>
       </div>
-      {show&&<div className="card">
-        <div style={{fontWeight:600,marginBottom:12}}>Add New Drug</div>
-        <Grid cols="1fr 1fr">
-          <F label="Drug Name *"><input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))}/></F>
-          <F label="Category"><select value={f.category} onChange={e=>setF(p=>({...p,category:e.target.value}))}>
-            {["Antibiotic","Analgesic","Antidiabetic","Statin","GI","Antifungal","Antihistamine","Other"].map(c=><option key={c}>{c}</option>)}
-          </select></F>
-          <F label="Stock *"><input type="number" value={f.stock} onChange={e=>setF(p=>({...p,stock:e.target.value}))}/></F>
-          <F label="Reorder Level"><input type="number" value={f.reorderLevel} onChange={e=>setF(p=>({...p,reorderLevel:e.target.value}))}/></F>
-          <F label="Unit"><select value={f.unit} onChange={e=>setF(p=>({...p,unit:e.target.value}))}>
-            {["tabs","caps","ml","vials","sachets","bottles","units"].map(u=><option key={u}>{u}</option>)}
-          </select></F>
-          <F label="Selling Price (KES) *"><input type="number" value={f.sellingPrice} onChange={e=>setF(p=>({...p,sellingPrice:e.target.value}))}/></F>
-          <F label="Expiry Date"><input type="date" value={f.expiryDate} onChange={e=>setF(p=>({...p,expiryDate:e.target.value}))}/></F>
-        </Grid>
-        <div style={{display:"flex",gap:8}}><button className="btn-green" onClick={save}>Save</button><button onClick={()=>setShow(false)}>Cancel</button></div>
-      </div>}
-      <div style={{overflowX:"auto"}}>
-        <table>
-          <thead><tr><th>Drug</th><th>Stock</th><th>Reorder At</th><th>Unit</th><th>Sell Price</th><th>Best Supplier</th><th>Best Buy Price</th><th>Margin</th><th>Status</th></tr></thead>
-          <tbody>{filtered.map(d=>{
-            const b=bestSupplier(d.id);
-            const isLow=d.stock<=d.reorderLevel;
-            const margin=b?((d.sellingPrice-b.price)/d.sellingPrice*100).toFixed(1):null;
-            const isLoss=margin!==null&&parseFloat(margin)<=0;
-            return(
-              <tr key={d.id} style={{background:isLow?"#fffbf0":""}}>
-                <td style={{fontWeight:500}}>{d.name}</td>
-                <td style={{color:isLow?"#a61c00":"",fontWeight:isLow?600:400}}>{d.stock}</td>
-                <td>{d.reorderLevel}</td>
-                <td style={{color:"#6b7280"}}>{d.unit}</td>
-                <td>KES {d.sellingPrice}</td>
-                <td>{b?<Badge c="bg" t={b.supplier}/>:"—"}</td>
-                <td>{b?"KES "+b.price:"—"}</td>
-                <td>{margin!==null?<Badge c={isLoss?"br":parseFloat(margin)>30?"bg":"ba"} t={margin+"%"}/>:<Badge c="bgr" t="No prices"/>}</td>
-                <td>{isLow?<Badge c="br" t="Low Stock"/>:<Badge c="bg" t="OK"/>}</td>
-              </tr>
-            );
-          })}</tbody>
-        </table>
+
+      {show&&(
+        <div className="card">
+          <div className="card-title">➕ Add New Drug</div>
+          <Grid2>
+            <F label="Drug Name *"><input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))}/></F>
+            <F label="Category"><select value={f.category} onChange={e=>setF(p=>({...p,category:e.target.value}))}>
+              {["Antibiotic","Analgesic","Antidiabetic","Statin","GI","Antifungal","Antihistamine","Other"].map(c=><option key={c}>{c}</option>)}
+            </select></F>
+            <F label="Current Stock *"><input type="number" value={f.stock} onChange={e=>setF(p=>({...p,stock:e.target.value}))}/></F>
+            <F label="Reorder Level"><input type="number" value={f.reorderLevel} onChange={e=>setF(p=>({...p,reorderLevel:e.target.value}))}/></F>
+            <F label="Unit"><select value={f.unit} onChange={e=>setF(p=>({...p,unit:e.target.value}))}>
+              {["tabs","caps","ml","vials","sachets","bottles","units"].map(u=><option key={u}>{u}</option>)}
+            </select></F>
+            <F label="Selling Price (KES) *"><input type="number" value={f.sellingPrice} onChange={e=>setF(p=>({...p,sellingPrice:e.target.value}))}/></F>
+            <F label="Expiry Date"><input type="date" value={f.expiryDate} onChange={e=>setF(p=>({...p,expiryDate:e.target.value}))}/></F>
+          </Grid2>
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            <button className="btn-green" onClick={save}>Save Drug</button>
+            <button onClick={()=>setShow(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="card" style={{padding:0,overflow:"hidden"}}>
+        <div style={{overflowX:"auto"}}>
+          <table>
+            <thead><tr><th>Drug Name</th><th>Category</th><th>Stock</th><th>Reorder</th><th>Sell Price</th><th>Best Supplier</th><th>Best Buy</th><th>Margin</th><th>Status</th></tr></thead>
+            <tbody>{filtered.map(d=>{
+              const b=bestSupplier(d.id);
+              const isLow=d.stock<=d.reorderLevel;
+              const m=b?((d.sellingPrice-b.price)/d.sellingPrice*100).toFixed(1):null;
+              return(
+                <tr key={d.id} style={{background:isLow?"#fff5f5":""}}>
+                  <td style={{fontWeight:600}}>{d.name}</td>
+                  <td><Badge c="bt" t={d.category}/></td>
+                  <td style={{fontWeight:700,color:isLow?"#991b1b":"#166534"}}>{d.stock} {d.unit}</td>
+                  <td style={{color:"#6b7280"}}>{d.reorderLevel}</td>
+                  <td style={{fontWeight:600}}>KES {d.sellingPrice}</td>
+                  <td>{b?<SupBadge s={b.supplier}/>:"—"}</td>
+                  <td style={{fontWeight:600,color:"#166534"}}>{b?"KES "+b.price:"—"}</td>
+                  <td>{m!==null?<Badge c={parseFloat(m)<0?"br":parseFloat(m)<20?"ba":"bg"} t={m+"%"}/>:<Badge c="bgr" t="No prices"/>}</td>
+                  <td>{isLow?<Badge c="br" t="⚠ Low"/>:<Badge c="bg" t="✓ OK"/>}</td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ── Price Compare ── */
-function PriceCompare({drugs,prices,getPrice,updatePrice,bestSupplier}){
+/* ════════════════ PRICE COMPARE ════════════════ */
+function PriceCompare({drugs,getPrice,updatePrice,bestSupplier}){
   const [editing,setEditing]=useState(null);
   const [editVal,setEditVal]=useState("");
   const [search,setSearch]=useState("");
-  const [highlightSupplier,setHighlightSupplier]=useState("");
-
+  const [hl,setHl]=useState("");
   const filtered=drugs.filter(d=>d.name.toLowerCase().includes(search.toLowerCase()));
 
-  function startEdit(drugId,supplier,cur){setEditing(`${drugId}_${supplier}`);setEditVal(cur||"");}
-  function saveEdit(drugId,supplier){
-    if(editVal!=="")updatePrice(drugId,supplier,Number(editVal));
-    setEditing(null);
-  }
+  function startEdit(drugId,s,cur){setEditing(`${drugId}_${s}`);setEditVal(cur||"");}
+  function saveEdit(drugId,s){if(editVal!=="")updatePrice(drugId,s,Number(editVal));setEditing(null);}
 
   return(
     <div>
       <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-        <input placeholder="Search drugs…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:160}}/>
-        <select value={highlightSupplier} onChange={e=>setHighlightSupplier(e.target.value)} style={{width:"auto"}}>
-          <option value="">Highlight supplier…</option>
-          {SUPPLIERS.map(s=><option key={s}>{s}</option>)}
+        <input placeholder="🔍 Search drugs…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:160}}/>
+        <select value={hl} onChange={e=>setHl(e.target.value)} style={{width:"auto",minWidth:160}}>
+          <option value="">Highlight a supplier…</option>
+          {SUPPLIERS.map(s=><option key={s}>{SUP_ICONS[s]} {s}</option>)}
         </select>
       </div>
-      <div style={{fontSize:13,color:"#6b7280",marginBottom:10}}>Click any price cell to edit it. ✅ = cheapest for that drug.</div>
-      <div style={{overflowX:"auto"}}>
-        <table>
-          <thead>
-            <tr>
-              <th style={{minWidth:180}}>Drug</th>
-              <th>Sell Price</th>
-              {SUPPLIERS.map(s=><th key={s} style={{background:highlightSupplier===s?"#e3f2fd":"",color:highlightSupplier===s?"#0d47a1":""}}>{s}</th>)}
-              <th>Best Supplier</th>
-              <th>Saving vs Worst</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(d=>{
-              const ps=SUPPLIERS.map(s=>({s,p:getPrice(d.id,s)})).filter(x=>x.p!==null);
-              const minP=ps.length?Math.min(...ps.map(x=>x.p)):null;
-              const maxP=ps.length?Math.max(...ps.map(x=>x.p)):null;
-              const best=bestSupplier(d.id);
-              const saving=minP!==null&&maxP!==null?(maxP-minP).toFixed(2):null;
-              return(
-                <tr key={d.id}>
-                  <td style={{fontWeight:500}}>{d.name}</td>
-                  <td>KES {d.sellingPrice}</td>
-                  {SUPPLIERS.map(s=>{
-                    const p=getPrice(d.id,s);
-                    const isBest=p===minP&&minP!==null;
-                    const isWorst=p===maxP&&maxP!==null&&ps.length>1;
-                    const isEditing=editing===`${d.id}_${s}`;
-                    const isHighlight=highlightSupplier===s;
-                    return(
-                      <td key={s} style={{background:isHighlight?"#f0f7ff":isBest?"#e6f4ea":isWorst?"#fff5f5":"",fontWeight:isBest?700:400,cursor:"pointer",color:isBest?"#2d6a4f":isWorst?"#a61c00":""}}
-                        onClick={()=>!isEditing&&startEdit(d.id,s,p)}>
-                        {isEditing?(
-                          <input type="number" value={editVal} autoFocus onChange={e=>setEditVal(e.target.value)}
-                            onBlur={()=>saveEdit(d.id,s)} onKeyDown={e=>{if(e.key==="Enter")saveEdit(d.id,s);if(e.key==="Escape")setEditing(null);}}
-                            style={{width:70,padding:"2px 4px",fontSize:13}}/>
-                        ):(
-                          p!==null?<span>{isBest?"✅ ":""}{isWorst?"❌ ":" "}KES {p}</span>:<span style={{color:"#d1d5db",fontSize:12}}>— add</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                  <td>{best?<Badge c="bg" t={best.supplier}/>:"—"}</td>
-                  <td style={{fontWeight:600,color:"#2d6a4f"}}>{saving?"KES "+saving:"—"}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+
+      {/* Supplier color key */}
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+        {SUPPLIERS.map(s=><SupBadge key={s} s={s}/>)}
+        <span style={{fontSize:12,color:"#6b7280",alignSelf:"center",marginLeft:8}}>✅ cheapest &nbsp;|&nbsp; ❌ most expensive &nbsp;|&nbsp; Click price to edit</span>
       </div>
-      <div style={{marginTop:14,fontSize:12,color:"#6b7280"}}>✅ = cheapest &nbsp;|&nbsp; ❌ = most expensive &nbsp;|&nbsp; Click a cell to update the price</div>
+
+      <div className="card" style={{padding:0,overflow:"hidden"}}>
+        <div style={{overflowX:"auto"}}>
+          <table>
+            <thead>
+              <tr>
+                <th style={{minWidth:190}}>Drug</th>
+                <th>Sell Price</th>
+                {SUPPLIERS.map(s=>(
+                  <th key={s} style={{background:hl===s?"#dbeafe":"",color:hl===s?"#1e40af":""}}>{SUP_ICONS[s]} {s}</th>
+                ))}
+                <th>Best Supplier</th>
+                <th>Max Saving</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(d=>{
+                const ps=SUPPLIERS.map(s=>({s,p:getPrice(d.id,s)})).filter(x=>x.p!==null);
+                const minP=ps.length?Math.min(...ps.map(x=>x.p)):null;
+                const maxP=ps.length?Math.max(...ps.map(x=>x.p)):null;
+                const best=bestSupplier(d.id);
+                const saving=minP!==null&&maxP!==null&&ps.length>1?(maxP-minP).toFixed(2):null;
+                return(
+                  <tr key={d.id}>
+                    <td style={{fontWeight:600}}>{d.name}</td>
+                    <td style={{fontWeight:600}}>KES {d.sellingPrice}</td>
+                    {SUPPLIERS.map(s=>{
+                      const p=getPrice(d.id,s);
+                      const isBest=p!==null&&p===minP;
+                      const isWorst=p!==null&&p===maxP&&ps.length>1;
+                      const isEditing=editing===`${d.id}_${s}`;
+                      const isHl=hl===s;
+                      return(
+                        <td key={s} style={{background:isHl?"#eff6ff":isBest?"#dcfce7":isWorst?"#fee2e2":"",fontWeight:isBest?700:400,cursor:"pointer"}}
+                          onClick={()=>!isEditing&&startEdit(d.id,s,p)}>
+                          {isEditing?(
+                            <input type="number" value={editVal} autoFocus
+                              onChange={e=>setEditVal(e.target.value)}
+                              onBlur={()=>saveEdit(d.id,s)}
+                              onKeyDown={e=>{if(e.key==="Enter")saveEdit(d.id,s);if(e.key==="Escape")setEditing(null);}}
+                              style={{width:70,padding:"2px 6px",fontSize:13}}/>
+                          ):(
+                            p!==null
+                              ?<span style={{color:isBest?"#166534":isWorst?"#991b1b":""}}>{isBest?"✅ ":isWorst?"❌ ":""}KES {p}</span>
+                              :<span style={{color:"#d1d5db",fontSize:12}}>— add</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td>{best?<SupBadge s={best.supplier}/>:"—"}</td>
+                    <td style={{fontWeight:700,color:"#166534"}}>{saving?"KES "+saving:"—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ── Create LPO ── */
-function CreateLPO({drugs,getPrice,bestSupplier,saveLPO,updateStock,pharmacyName,setPharmacyName,prices}){
+/* ════════════════ CREATE LPO ════════════════ */
+function CreateLPO({drugs,getPrice,bestSupplier,saveLPO,pharmacyName,setPharmacyName}){
   const [supplier,setSupplier]=useState("");
   const [items,setItems]=useState([]);
   const [lpoNumber,setLpoNumber]=useState("LPO-"+String(Date.now()).slice(-5));
   const [deliveryDate,setDeliveryDate]=useState("");
   const [notes,setNotes]=useState("");
-  const [printed,setPrinted]=useState(false);
-  const [stockWarnings,setStockWarnings]=useState([]);
+  const [saved,setSaved]=useState(false);
 
-  function addItem(){
-    setItems(p=>[...p,{drugId:"",qty:"",unitPrice:"",stockOk:true}]);
-    setStockWarnings([]);
-  }
+  function addItem(){setItems(p=>[...p,{drugId:"",qty:"",unitPrice:""}]);}
   function removeItem(i){setItems(p=>p.filter((_,idx)=>idx!==i));}
-
   function onDrug(i,drugId){
-    const drug=drugs.find(d=>d.id===Number(drugId));
     const price=supplier?getPrice(Number(drugId),supplier):null;
-    setItems(p=>p.map((it,idx)=>idx===i?{...it,drugId:Number(drugId),unitPrice:price||"",stockOk:drug?drug.stock>drug.reorderLevel:true}:it));
+    setItems(p=>p.map((it,idx)=>idx===i?{...it,drugId:Number(drugId),unitPrice:price||""}:it));
   }
-  function onQty(i,qty){setItems(p=>p.map((it,idx)=>idx===i?{...it,qty}:it));}
-  function onPrice(i,pr){setItems(p=>p.map((it,idx)=>idx===i?{...it,unitPrice:pr}:it));}
-  function onSupplierChange(s){
+  function onSupChange(s){
     setSupplier(s);
-    setItems(p=>p.map(it=>{
-      if(!it.drugId)return it;
-      const price=getPrice(it.drugId,s);
-      return{...it,unitPrice:price||it.unitPrice};
-    }));
+    setItems(p=>p.map(it=>{if(!it.drugId)return it;const pr=getPrice(it.drugId,s);return{...it,unitPrice:pr||it.unitPrice};}));
   }
 
   const validItems=items.filter(it=>it.drugId&&it.qty&&it.unitPrice);
   const total=validItems.reduce((s,it)=>s+Number(it.qty)*Number(it.unitPrice),0);
 
-  // stock warnings
-  const warnings=items.filter(it=>{
-    if(!it.drugId)return false;
-    const drug=drugs.find(d=>d.id===it.drugId);
-    return drug&&drug.stock>drug.reorderLevel;
-  });
-
-  // check if chosen supplier is cheapest for each item
-  const expensiveWarnings=validItems.filter(it=>{
-    const best=bestSupplier(it.drugId);
-    return best&&supplier&&best.supplier!==supplier&&best.price<Number(it.unitPrice);
-  });
+  // Stock warnings — item has enough stock
+  const stockOkWarnings=items.filter(it=>{if(!it.drugId)return false;const d=drugs.find(x=>x.id===it.drugId);return d&&d.stock>d.reorderLevel;});
+  // Cheaper supplier exists
+  const cheaperExists=validItems.filter(it=>{const b=bestSupplier(it.drugId);return b&&supplier&&b.supplier!==supplier&&b.price<Number(it.unitPrice);});
 
   function handlePrint(){
-    if(!supplier)return alert("Select a supplier first.");
+    if(!supplier)return alert("Please select a supplier first.");
     if(validItems.length===0)return alert("Add at least one item.");
     window.print();
-    setPrinted(true);
   }
 
-  function confirmReceived(){
-    if(!supplier)return;
-    const lpo={lpoNumber,supplier,items:validItems.map(it=>({...it,drugName:drugs.find(d=>d.id===it.drugId)?.name})),total,notes,status:"Pending",deliveryDate};
-    saveLPO(lpo);
-    // reset
-    setItems([]);setSupplier("");setNotes("");setDeliveryDate("");setPrinted(false);
-    setLpoNumber("LPO-"+String(Date.now()).slice(-5));
-    alert("LPO saved!");
+  function handleSave(){
+    if(!supplier||validItems.length===0)return alert("Select supplier and add items.");
+    saveLPO({lpoNumber,supplier,items:validItems.map(it=>({...it,drugName:drugs.find(d=>d.id===it.drugId)?.name,unit:drugs.find(d=>d.id===it.drugId)?.unit})),total,notes,status:"Pending",deliveryDate,date:new Date().toLocaleDateString("en-KE")});
+    setSaved(true);
+    setTimeout(()=>{setItems([]);setSupplier("");setNotes("");setDeliveryDate("");setSaved(false);setLpoNumber("LPO-"+String(Date.now()).slice(-5));},1500);
   }
 
   const today=new Date().toLocaleDateString("en-KE",{year:"numeric",month:"long",day:"numeric"});
 
   return(
     <div>
-      {/* LPO Form — no-print */}
+      {saved&&<div className="ok" style={{fontSize:15,fontWeight:600}}>✅ LPO saved successfully!</div>}
+
+      {/* Form */}
       <div className="no-print">
         <div className="card">
-          <div style={{fontWeight:700,fontSize:16,marginBottom:14}}>New Local Purchase Order</div>
-          <Grid cols="1fr 1fr 1fr">
+          <div className="card-title">📋 LPO Details</div>
+          <Grid2 cols="1fr 1fr 1fr">
             <F label="LPO Number"><input value={lpoNumber} onChange={e=>setLpoNumber(e.target.value)}/></F>
             <F label="Supplier *">
-              <select value={supplier} onChange={e=>onSupplierChange(e.target.value)}>
+              <select value={supplier} onChange={e=>onSupChange(e.target.value)}>
                 <option value="">Select supplier…</option>
-                {SUPPLIERS.map(s=><option key={s}>{s}</option>)}
+                {SUPPLIERS.map(s=><option key={s}>{SUP_ICONS[s]} {s}</option>)}
               </select>
             </F>
-            <F label="Expected Delivery Date"><input type="date" value={deliveryDate} onChange={e=>setDeliveryDate(e.target.value)}/></F>
-          </Grid>
+            <F label="Expected Delivery"><input type="date" value={deliveryDate} onChange={e=>setDeliveryDate(e.target.value)}/></F>
+          </Grid2>
           <F label="Pharmacy Name"><input value={pharmacyName} onChange={e=>setPharmacyName(e.target.value)}/></F>
         </div>
 
-        {/* Supplier price tip */}
-        {supplier&&<div style={{marginBottom:14,fontSize:13,color:"#6b7280"}}>
-          Prices auto-filled from {supplier}'s saved quotes. Edit manually if needed.
-        </div>}
+        {/* Warnings */}
+        {stockOkWarnings.length>0&&(
+          <div className="warn">
+            ⚠️ <strong>Stock Check:</strong> These items may not need reordering yet:<br/>
+            {stockOkWarnings.map(it=>{const d=drugs.find(x=>x.id===it.drugId);return d?<span key={it.drugId} style={{display:"block",marginTop:4,paddingLeft:12}}>• {d.name}: <strong>{d.stock} {d.unit}</strong> in stock (reorder at {d.reorderLevel})</span>:null;})}
+          </div>
+        )}
+        {cheaperExists.length>0&&(
+          <div className="err">
+            💸 <strong>Cheaper options available — you're leaving money on the table:</strong><br/>
+            {cheaperExists.map(it=>{
+              const drug=drugs.find(d=>d.id===it.drugId);
+              const best=bestSupplier(it.drugId);
+              const saving=((Number(it.unitPrice)-best.price)*Number(it.qty)).toFixed(0);
+              return <span key={it.drugId} style={{display:"block",marginTop:4,paddingLeft:12}}>• {drug?.name}: <strong>{best.supplier}</strong> @ KES {best.price} vs KES {it.unitPrice} — Save <strong>KES {saving}</strong> on this order</span>;
+            })}
+          </div>
+        )}
 
-        {/* Stock warnings */}
-        {warnings.length>0&&<div className="warn">
-          ⚠ <strong>Stock check:</strong> The following items have sufficient stock — confirm they truly need ordering:<br/>
-          {warnings.map(it=>{const d=drugs.find(x=>x.id===it.drugId);return d?<span key={it.drugId} style={{display:"block",marginTop:4}}>• {d.name}: {d.stock} {d.unit} in stock (reorder level: {d.reorderLevel})</span>:null;})}
-        </div>}
-
-        {/* Expensive supplier warning */}
-        {expensiveWarnings.length>0&&<div className="err">
-          💸 <strong>Cheaper options available!</strong> You can save money on:<br/>
-          {expensiveWarnings.map(it=>{
-            const drug=drugs.find(d=>d.id===it.drugId);
-            const best=bestSupplier(it.drugId);
-            const saving=((Number(it.unitPrice)-best.price)*Number(it.qty)).toFixed(0);
-            return <span key={it.drugId} style={{display:"block",marginTop:4}}>• {drug?.name}: {best.supplier} sells at KES {best.price} vs KES {it.unitPrice} — save KES {saving} on this order</span>;
-          })}
-        </div>}
-
-        {/* Items */}
+        {/* Items table */}
         <div className="card">
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <div style={{fontWeight:600}}>Order Items</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div className="card-title" style={{marginBottom:0}}>🛒 Order Items</div>
             <button className="btn-green" onClick={addItem}>+ Add Item</button>
           </div>
-          {items.length===0&&<div style={{color:"#6b7280",fontSize:14,textAlign:"center",padding:"1rem"}}>Click "+ Add Item" to start building the LPO.</div>}
+
+          {items.length===0&&<div style={{color:"#6b7280",textAlign:"center",padding:"2rem",background:"#f9fffe",borderRadius:10,border:"1.5px dashed #d1fae5"}}>Click <strong>+ Add Item</strong> to start building this LPO</div>}
+
           {items.map((it,i)=>{
             const drug=drugs.find(d=>d.id===it.drugId);
             const isLow=drug&&drug.stock<=drug.reorderLevel;
             return(
-              <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr auto",gap:"0 10px",alignItems:"end",marginBottom:10,padding:"10px",background:isLow?"#f0fdf4":"#f9fafb",borderRadius:8,border:"1px solid #e5e7eb"}}>
+              <div key={i} style={{display:"grid",gridTemplateColumns:"2.5fr 1fr 1fr 1fr auto",gap:"0 10px",alignItems:"end",marginBottom:10,padding:"12px",background:isLow?"#f0fdf4":"#f9fffe",borderRadius:10,border:`1.5px solid ${isLow?"#6ee7b7":"#e5e7eb"}`}}>
                 <F label="Drug">
                   <select value={it.drugId||""} onChange={e=>onDrug(i,e.target.value)}>
                     <option value="">Select drug…</option>
-                    {drugs.map(d=><option key={d.id} value={d.id}>{d.name} {d.stock<=d.reorderLevel?"⚠️":""}</option>)}
+                    {drugs.map(d=><option key={d.id} value={d.id}>{d.name}{d.stock<=d.reorderLevel?" ⚠️ LOW":""}</option>)}
                   </select>
                 </F>
-                <F label="Qty">
-                  <input type="number" value={it.qty} onChange={e=>onQty(i,e.target.value)} placeholder="0"/>
-                </F>
-                <F label={`Unit Price (KES)${supplier?" — "+supplier:""}`}>
-                  <input type="number" step="0.01" value={it.unitPrice} onChange={e=>onPrice(i,e.target.value)}/>
-                </F>
-                <F label="Line Total">
-                  <input readOnly value={it.qty&&it.unitPrice?"KES "+(Number(it.qty)*Number(it.unitPrice)).toFixed(0):""} style={{background:"#f3f4f6",color:"#374151"}}/>
-                </F>
-                <div style={{paddingBottom:10}}><button className="btn-red" onClick={()=>removeItem(i)} style={{padding:"7px 10px"}}>✕</button></div>
+                <F label="Qty"><input type="number" value={it.qty} onChange={e=>setItems(p=>p.map((x,idx)=>idx===i?{...x,qty:e.target.value}:x))} placeholder="0"/></F>
+                <F label={`Price — ${supplier||"KES"}`}><input type="number" step="0.01" value={it.unitPrice} onChange={e=>setItems(p=>p.map((x,idx)=>idx===i?{...x,unitPrice:e.target.value}:x))}/></F>
+                <F label="Line Total"><input readOnly value={it.qty&&it.unitPrice?"KES "+(Number(it.qty)*Number(it.unitPrice)).toFixed(0):""} style={{background:"#f0fdf4",fontWeight:600,color:"#166534"}}/></F>
+                <div style={{paddingBottom:12}}><button className="btn-red" onClick={()=>removeItem(i)} style={{padding:"8px 11px"}}>✕</button></div>
               </div>
             );
           })}
-          {validItems.length>0&&<div style={{textAlign:"right",fontWeight:700,fontSize:18,marginTop:8,color:"#1d9e75"}}>Total: KES {total.toFixed(2)}</div>}
+
+          {validItems.length>0&&<div style={{textAlign:"right",fontSize:20,fontWeight:800,color:"#136b50",marginTop:8,padding:"10px 0",borderTop:"2px solid #d1fae5"}}>Grand Total: KES {total.toFixed(2)}</div>}
         </div>
 
-        <F label="Notes / Special Instructions"><input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="e.g. urgent delivery, cold chain required"/></F>
+        <F label="Notes / Special Instructions"><input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="e.g. urgent, cold chain required, partial delivery ok"/></F>
 
-        <div style={{display:"flex",gap:10,marginTop:8,flexWrap:"wrap"}}>
-          <button className="btn-green" onClick={handlePrint} style={{fontSize:15,padding:"10px 24px"}}>🖨 Preview & Print LPO</button>
-          <button className="btn-blue" onClick={confirmReceived} style={{fontSize:15,padding:"10px 24px"}}>💾 Save LPO</button>
+        <div style={{display:"flex",gap:10,marginTop:4,flexWrap:"wrap"}}>
+          <button className="btn-green" onClick={handlePrint} style={{fontSize:15,padding:"11px 28px"}}>🖨️ Print LPO</button>
+          <button className="btn-blue" onClick={handleSave} style={{fontSize:15,padding:"11px 28px"}}>💾 Save LPO</button>
         </div>
       </div>
 
       {/* ── PRINTABLE LPO ── */}
-      <div className="lpo-print" style={{display:"none",padding:"40px 60px",maxWidth:800,margin:"0 auto",fontFamily:"serif"}}>
-        <style>{`@media print{.lpo-print{display:block!important}}`}</style>
-        <div style={{textAlign:"center",borderBottom:"2px solid #000",paddingBottom:16,marginBottom:20}}>
-          <div style={{fontSize:22,fontWeight:700}}>{pharmacyName}</div>
-          <div style={{fontSize:14,marginTop:4}}>LOCAL PURCHASE ORDER</div>
+      <div className="lpo-print" style={{display:"none"}}>
+        <div style={{textAlign:"center",borderBottom:"3px solid #1d9e75",paddingBottom:16,marginBottom:22}}>
+          <div style={{fontSize:26,fontWeight:800,color:"#136b50"}}>{pharmacyName}</div>
+          <div style={{fontSize:15,letterSpacing:3,marginTop:4,color:"#555"}}>LOCAL PURCHASE ORDER</div>
         </div>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:20,fontSize:13}}>
-          <div><strong>LPO No:</strong> {lpoNumber}<br/><strong>Date:</strong> {today}<br/>{deliveryDate&&<span><strong>Delivery By:</strong> {deliveryDate}</span>}</div>
-          <div style={{textAlign:"right"}}><strong>Supplier:</strong> {supplier}<br/></div>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:22,fontSize:13}}>
+          <div style={{lineHeight:1.8}}><strong>LPO No:</strong> {lpoNumber}<br/><strong>Date:</strong> {today}<br/>{deliveryDate&&<><strong>Delivery By:</strong> {deliveryDate}</>}</div>
+          <div style={{textAlign:"right",lineHeight:1.8}}><strong>Supplier:</strong> {supplier}</div>
         </div>
-        <table style={{width:"100%",borderCollapse:"collapse",marginBottom:20,fontSize:13}}>
+        <table style={{marginBottom:20,fontSize:13,borderCollapse:"collapse",width:"100%"}}>
           <thead>
-            <tr style={{background:"#f3f4f6"}}>
-              <th style={{border:"1px solid #ccc",padding:"8px",textAlign:"left"}}>#</th>
-              <th style={{border:"1px solid #ccc",padding:"8px",textAlign:"left"}}>Drug / Item Description</th>
-              <th style={{border:"1px solid #ccc",padding:"8px",textAlign:"right"}}>Qty</th>
-              <th style={{border:"1px solid #ccc",padding:"8px",textAlign:"right"}}>Unit Price (KES)</th>
-              <th style={{border:"1px solid #ccc",padding:"8px",textAlign:"right"}}>Total (KES)</th>
+            <tr style={{background:"#f0fdf4"}}>
+              {["#","Description","Qty","Unit","Unit Price (KES)","Total (KES)"].map(h=><th key={h} style={{border:"1px solid #ccc",padding:"9px 10px",textAlign:h==="#"||h==="Qty"?"center":"left"}}>{h}</th>)}
             </tr>
           </thead>
           <tbody>
-            {validItems.map((it,i)=>{
-              const drug=drugs.find(d=>d.id===it.drugId);
-              return(
-                <tr key={i}>
-                  <td style={{border:"1px solid #ccc",padding:"8px"}}>{i+1}</td>
-                  <td style={{border:"1px solid #ccc",padding:"8px"}}>{drug?.name}</td>
-                  <td style={{border:"1px solid #ccc",padding:"8px",textAlign:"right"}}>{it.qty} {drug?.unit}</td>
-                  <td style={{border:"1px solid #ccc",padding:"8px",textAlign:"right"}}>{Number(it.unitPrice).toFixed(2)}</td>
-                  <td style={{border:"1px solid #ccc",padding:"8px",textAlign:"right"}}>{(Number(it.qty)*Number(it.unitPrice)).toFixed(2)}</td>
-                </tr>
-              );
-            })}
-            {/* empty rows */}
-            {[...Array(Math.max(0,8-validItems.length))].map((_,i)=>(
-              <tr key={"e"+i}><td style={{border:"1px solid #ccc",padding:"8px"}}>&nbsp;</td><td style={{border:"1px solid #ccc",padding:"8px"}}>&nbsp;</td><td style={{border:"1px solid #ccc",padding:"8px"}}>&nbsp;</td><td style={{border:"1px solid #ccc",padding:"8px"}}>&nbsp;</td><td style={{border:"1px solid #ccc",padding:"8px"}}>&nbsp;</td></tr>
+            {validItems.map((it,i)=>{const d=drugs.find(x=>x.id===it.drugId);return(
+              <tr key={i}>
+                <td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"center"}}>{i+1}</td>
+                <td style={{border:"1px solid #ccc",padding:"8px 10px"}}>{d?.name}</td>
+                <td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"center"}}>{it.qty}</td>
+                <td style={{border:"1px solid #ccc",padding:"8px 10px"}}>{d?.unit}</td>
+                <td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"right"}}>{Number(it.unitPrice).toFixed(2)}</td>
+                <td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"right",fontWeight:600}}>{(Number(it.qty)*Number(it.unitPrice)).toFixed(2)}</td>
+              </tr>
+            );})}
+            {[...Array(Math.max(0,6-validItems.length))].map((_,i)=>(
+              <tr key={"e"+i}>{[1,2,3,4,5,6].map(c=><td key={c} style={{border:"1px solid #ccc",padding:"8px 10px"}}>&nbsp;</td>)}</tr>
             ))}
           </tbody>
           <tfoot>
-            <tr style={{fontWeight:700}}>
-              <td colSpan={4} style={{border:"1px solid #ccc",padding:"8px",textAlign:"right"}}>TOTAL</td>
-              <td style={{border:"1px solid #ccc",padding:"8px",textAlign:"right"}}>KES {total.toFixed(2)}</td>
+            <tr style={{fontWeight:800,background:"#f0fdf4"}}>
+              <td colSpan={5} style={{border:"1px solid #ccc",padding:"10px",textAlign:"right",fontSize:15}}>GRAND TOTAL</td>
+              <td style={{border:"1px solid #ccc",padding:"10px",textAlign:"right",fontSize:15,color:"#136b50"}}>KES {total.toFixed(2)}</td>
             </tr>
           </tfoot>
         </table>
-        {notes&&<div style={{marginBottom:20,fontSize:13}}><strong>Notes:</strong> {notes}</div>}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:40,marginTop:50,fontSize:13}}>
-          <div><div style={{borderTop:"1px solid #000",paddingTop:6,marginTop:40}}>Prepared By</div><div style={{color:"#6b7280",fontSize:11}}>Name / Signature / Date</div></div>
-          <div><div style={{borderTop:"1px solid #000",paddingTop:6,marginTop:40}}>Approved By</div><div style={{color:"#6b7280",fontSize:11}}>Name / Signature / Date</div></div>
+        {notes&&<div style={{marginBottom:16,fontSize:13,padding:"8px 12px",background:"#f9fffe",borderRadius:6,border:"1px solid #d1fae5"}}><strong>Notes:</strong> {notes}</div>}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:60,marginTop:60,fontSize:13}}>
+          <div><div style={{borderTop:"1.5px solid #000",paddingTop:6,marginTop:40}}>Prepared By</div><div style={{color:"#6b7280",fontSize:11,marginTop:4}}>Name · Signature · Date</div></div>
+          <div><div style={{borderTop:"1.5px solid #000",paddingTop:6,marginTop:40}}>Approved By</div><div style={{color:"#6b7280",fontSize:11,marginTop:4}}>Name · Signature · Date</div></div>
         </div>
-        <div style={{marginTop:40,fontSize:11,color:"#6b7280",textAlign:"center",borderTop:"1px solid #e5e7eb",paddingTop:10}}>Generated by PharmManager · {today}</div>
+        <div style={{marginTop:40,fontSize:10,color:"#999",textAlign:"center",borderTop:"1px solid #e5e7eb",paddingTop:10}}>Generated by PharmManager · {today}</div>
       </div>
     </div>
   );
 }
 
-/* ── LPO History ── */
-function LPOHistory({lpos,updateStock,drugs}){
-  if(lpos.length===0)return <div style={{color:"#6b7280",textAlign:"center",padding:"3rem"}}>No LPOs saved yet. Create one in the "Create LPO" tab.</div>;
+/* ════════════════ LPO HISTORY ════════════════ */
+function LPOHistory({lpos}){
+  if(lpos.length===0)return(
+    <div style={{textAlign:"center",padding:"4rem 2rem",color:"#6b7280"}}>
+      <div style={{fontSize:48,marginBottom:16}}>📋</div>
+      <div style={{fontSize:16,fontWeight:600}}>No LPOs yet</div>
+      <div style={{fontSize:14,marginTop:6}}>Go to "Create LPO" to raise your first order</div>
+    </div>
+  );
   return(
     <div>
-      {lpos.slice().reverse().map(l=>(
+      <div style={{fontWeight:700,fontSize:16,color:"#136b50",marginBottom:16}}>{lpos.length} LPO{lpos.length!==1?"s":""} on record</div>
+      {lpos.map(l=>(
         <div key={l.id} className="card">
-          <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10,marginBottom:12}}>
             <div>
-              <span style={{fontWeight:700,fontSize:16}}>LPO #{l.lpoNumber}</span>
-              <span style={{marginLeft:12,color:"#6b7280",fontSize:13}}>{l.supplier} · {l.date}</span>
+              <span style={{fontWeight:800,fontSize:17,color:"#136b50"}}>LPO #{l.lpoNumber}</span>
+              <span style={{marginLeft:10}}><SupBadge s={l.supplier}/></span>
             </div>
-            <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <span style={{fontWeight:600}}>KES {l.total.toFixed(0)}</span>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <span style={{fontWeight:800,fontSize:16}}>KES {l.total.toFixed(0)}</span>
               <Badge c={l.status==="Received"?"bg":l.status==="Cancelled"?"br":"ba"} t={l.status}/>
+              <span style={{fontSize:12,color:"#6b7280"}}>{l.date}</span>
             </div>
           </div>
-          <table style={{marginBottom:8}}>
-            <thead><tr><th>Drug</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
+          <table>
+            <thead><tr><th>Drug</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>Total</th></tr></thead>
             <tbody>{l.items.map((it,i)=>(
               <tr key={i}>
-                <td>{it.drugName}</td>
+                <td style={{fontWeight:500}}>{it.drugName}</td>
                 <td>{it.qty}</td>
+                <td style={{color:"#6b7280"}}>{it.unit}</td>
                 <td>KES {it.unitPrice}</td>
-                <td>KES {(Number(it.qty)*Number(it.unitPrice)).toFixed(0)}</td>
+                <td style={{fontWeight:600,color:"#166534"}}>KES {(Number(it.qty)*Number(it.unitPrice)).toFixed(0)}</td>
               </tr>
             ))}</tbody>
           </table>
-          {l.notes&&<div style={{fontSize:12,color:"#6b7280"}}>📝 {l.notes}</div>}
+          {l.notes&&<div style={{marginTop:8,fontSize:12,color:"#6b7280"}}>📝 {l.notes}</div>}
+          {l.deliveryDate&&<div style={{marginTop:4,fontSize:12,color:"#6b7280"}}>🚚 Expected: {l.deliveryDate}</div>}
         </div>
       ))}
     </div>
