@@ -1,640 +1,520 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>PharmManager</title>
+import { useState } from "react";
 
-<!-- ✅ React -->
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<!-- ✅ Babel (converts JSX in browser) -->
-<script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js"></script>
+const TABS = ["Dashboard", "Inventory", "Orders", "Vendors", "Price Compare", "Profitability"];
 
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,sans-serif;background:#f0faf6;color:#1a1a2e;min-height:100vh}
-
-/* ── Pharmacy color palette ── */
-:root{
-  --green:#1d9e75;--green-dark:#136b50;--green-light:#e6f4ea;
-  --teal:#0f8080;--teal-light:#e0f4f4;
-  --blue:#1565c0;--blue-light:#e3f2fd;
-  --amber:#d97706;--amber-light:#fef3c7;
-  --red:#c0392b;--red-light:#fdecea;
-  --purple:#6d28d9;--purple-light:#ede9fe;
-  --white:#ffffff;--border:#d1fae5;
-  --surface:#f0fdf4;
-}
-
-/* ── Header gradient ── */
-.header{
-  background:linear-gradient(135deg,#136b50 0%,#1d9e75 50%,#0f8080 100%);
-  padding:0 24px;display:flex;align-items:center;gap:16px;
-  box-shadow:0 2px 12px rgba(29,158,117,.3);position:sticky;top:0;z-index:100;
-}
-.header-logo{width:44px;height:44px;background:rgba(255,255,255,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;border:2px solid rgba(255,255,255,.3)}
-.header-title{color:#fff;font-size:18px;font-weight:700;letter-spacing:.3px}
-.header-sub{color:rgba(255,255,255,.8);font-size:11px;margin-top:1px}
-.header-badge{margin-left:auto;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
-
-/* ── Tabs ── */
-.tabs{background:#fff;border-bottom:2px solid #d1fae5;display:flex;overflow-x:auto;padding:0 12px;gap:2px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
-.tab-btn{padding:13px 18px;border:none;background:none;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;display:flex;align-items:center;gap:6px}
-.tab-btn:hover{color:var(--green);background:#f0fdf4}
-.tab-active{color:var(--green)!important;border-bottom:3px solid var(--green)!important;background:#f0fdf4!important}
-
-/* ── Cards ── */
-.card{background:#fff;border:1px solid #d1fae5;border-radius:14px;padding:18px 22px;margin-bottom:16px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
-.card-title{font-size:16px;font-weight:700;color:#136b50;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-
-/* ── Metrics ── */
-.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:22px}
-.metric{border-radius:14px;padding:16px;border:1px solid transparent;position:relative;overflow:hidden}
-.metric-g{background:linear-gradient(135deg,#e6f4ea,#d1fae5);border-color:#6ee7b7}
-.metric-r{background:linear-gradient(135deg,#fdecea,#fee2e2);border-color:#fca5a5}
-.metric-b{background:linear-gradient(135deg,#e3f2fd,#dbeafe);border-color:#93c5fd}
-.metric-a{background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fcd34d}
-.metric-p{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#c4b5fd}
-.metric-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:6px}
-.metric-value{font-size:28px;font-weight:800;line-height:1}
-.metric-sub{font-size:11px;color:#6b7280;margin-top:4px}
-
-/* ── Badges ── */
-.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
-.bg{background:#dcfce7;color:#166534}.br{background:#fee2e2;color:#991b1b}.ba{background:#fef3c7;color:#92400e}.bb{background:#dbeafe;color:#1e40af}.bgr{background:#f3f4f6;color:#6b7280}.bp{background:#ede9fe;color:#5b21b6}.bt{background:#ccfbf1;color:#0f766e}
-
-/* ── Buttons ── */
-button{cursor:pointer;border-radius:8px;font-size:14px;padding:8px 16px;border:1.5px solid #d1d5db;background:#fff;transition:all .15s;font-weight:500}
-.btn-green{background:linear-gradient(135deg,#1d9e75,#136b50);color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(29,158,117,.3)}
-.btn-green:hover{background:linear-gradient(135deg,#136b50,#0f5e45);transform:translateY(-1px)}
-.btn-red{background:#fdecea;color:#a61c00;border-color:#fca5a5}
-.btn-blue{background:#e3f2fd;color:#0d47a1;border-color:#90caf9}
-.btn-amber{background:#fef3c7;color:#92400e;border-color:#fcd34d}
-.btn-outline{background:#fff;color:var(--green);border-color:var(--green)}
-
-/* ── Forms ── */
-select,input{border:1.5px solid #d1fae5;border-radius:8px;padding:8px 12px;font-size:14px;width:100%;background:#fff;outline:none;transition:border .15s}
-select:focus,input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.12)}
-.field{margin-bottom:12px}
-.flabel{font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
-
-/* ── Tables ── */
-table{border-collapse:collapse;width:100%}
-th{background:#f0fdf4;color:#136b50;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;border-bottom:2px solid #d1fae5}
-td{padding:10px 12px;font-size:14px;border-bottom:1px solid #f0fdf4}
-tbody tr:hover{background:#f9fffe}
-
-/* ── Alerts ── */
-.warn{background:linear-gradient(135deg,#fef3c7,#fde68a22);border:1px solid #fcd34d;color:#78350f;border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:14px}
-.err{background:linear-gradient(135deg,#fdecea,#fee2e222);border:1px solid #fca5a5;color:#7f1d1d;border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:14px}
-.ok{background:linear-gradient(135deg,#e6f4ea,#dcfce722);border:1px solid #6ee7b7;color:#14532d;border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:14px}
-
-/* ── Supplier color tags ── */
-.sup-Eastleigh{background:#dbeafe;color:#1e40af}
-.sup-Bilova{background:#dcfce7;color:#166534}
-.sup-Signature{background:#ede9fe;color:#5b21b6}
-.sup-Krishna{background:#fef3c7;color:#92400e}
-.sup-Medispec{background:#ccfbf1;color:#0f766e}
-.sup-Firstmile{background:#fee2e2;color:#991b1b}
-
-/* ── Print ── */
-@media print{
-  .no-print{display:none!important}
-  body{background:#fff}
-  .lpo-print{display:block!important;padding:30px 50px}
-  .card{border:none;box-shadow:none;padding:0}
-}
-</style>
-</head>
-<body>
-<div id="root"><div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:16px;color:#1d9e75">Loading PharmManager…</div></div>
-
-<script type="text/babel">
-const {useState,useMemo}=React;
-
-const SUPPLIERS=["Eastleigh","Bilova","Signature","Krishna","Medispec","Firstmile"];
-const SUP_ICONS={"Eastleigh":"🔵","Bilova":"🟢","Signature":"🟣","Krishna":"🟡","Medispec":"🩵","Firstmile":"🔴"};
-const TABS=[{id:"Dashboard",icon:"🏠"},{id:"Inventory",icon:"📦"},{id:"Price Compare",icon:"📊"},{id:"Create LPO",icon:"📋"},{id:"LPO History",icon:"🗂️"}];
-
-const initDrugs=[
-  {id:1,name:"Amoxicillin 500mg",category:"Antibiotic",stock:120,reorderLevel:50,unit:"caps",sellingPrice:25,expiryDate:"2026-12-01"},
-  {id:2,name:"Paracetamol 500mg",category:"Analgesic",stock:30,reorderLevel:100,unit:"tabs",sellingPrice:8,expiryDate:"2027-03-15"},
-  {id:3,name:"Metformin 850mg",category:"Antidiabetic",stock:200,reorderLevel:80,unit:"tabs",sellingPrice:15,expiryDate:"2026-08-20"},
-  {id:4,name:"Atorvastatin 20mg",category:"Statin",stock:60,reorderLevel:60,unit:"tabs",sellingPrice:35,expiryDate:"2027-01-10"},
-  {id:5,name:"Amoxicillin+Clavulanate 625mg",category:"Antibiotic",stock:20,reorderLevel:40,unit:"tabs",sellingPrice:75,expiryDate:"2026-11-01"},
-  {id:6,name:"Omeprazole 20mg",category:"GI",stock:80,reorderLevel:60,unit:"caps",sellingPrice:12,expiryDate:"2027-02-01"},
+const initDrugs = [
+  { id: 1, name: "Amoxicillin 500mg", category: "Antibiotic", stock: 120, reorderLevel: 50, unit: "caps", sellingPrice: 25, expiryDate: "2026-12-01" },
+  { id: 2, name: "Paracetamol 500mg", category: "Analgesic", stock: 30, reorderLevel: 100, unit: "tabs", sellingPrice: 8, expiryDate: "2027-03-15" },
+  { id: 3, name: "Metformin 850mg", category: "Antidiabetic", stock: 200, reorderLevel: 80, unit: "tabs", sellingPrice: 15, expiryDate: "2026-08-20" },
+  { id: 4, name: "Atorvastatin 20mg", category: "Statin", stock: 60, reorderLevel: 60, unit: "tabs", sellingPrice: 35, expiryDate: "2027-01-10" },
 ];
-
-const initPrices=[
-  {drugId:1,supplier:"Eastleigh",price:12},{drugId:1,supplier:"Bilova",price:14},{drugId:1,supplier:"Signature",price:11.5},{drugId:1,supplier:"Krishna",price:13},{drugId:1,supplier:"Medispec",price:12.5},{drugId:1,supplier:"Firstmile",price:13.5},
-  {drugId:2,supplier:"Eastleigh",price:4.5},{drugId:2,supplier:"Bilova",price:5},{drugId:2,supplier:"Signature",price:4.2},{drugId:2,supplier:"Krishna",price:4.8},{drugId:2,supplier:"Medispec",price:5.2},{drugId:2,supplier:"Firstmile",price:4.6},
-  {drugId:3,supplier:"Eastleigh",price:8},{drugId:3,supplier:"Bilova",price:7.5},{drugId:3,supplier:"Signature",price:8.5},{drugId:3,supplier:"Krishna",price:7.8},{drugId:3,supplier:"Medispec",price:8.2},
-  {drugId:4,supplier:"Eastleigh",price:20},{drugId:4,supplier:"Bilova",price:18},{drugId:4,supplier:"Signature",price:19},{drugId:4,supplier:"Krishna",price:21},{drugId:4,supplier:"Firstmile",price:17.5},
-  {drugId:5,supplier:"Eastleigh",price:55},{drugId:5,supplier:"Bilova",price:52},{drugId:5,supplier:"Signature",price:58},{drugId:5,supplier:"Krishna",price:50},
-  {drugId:6,supplier:"Eastleigh",price:6},{drugId:6,supplier:"Bilova",price:6.5},{drugId:6,supplier:"Signature",price:5.8},{drugId:6,supplier:"Medispec",price:6.2},{drugId:6,supplier:"Firstmile",price:6.4},
+const initVendors = [
+  { id: 1, name: "MedSupply Kenya", contact: "0700-111-222", paymentTerms: "30 days", leadDays: 3 },
+  { id: 2, name: "Pharma Direct", contact: "0711-333-444", paymentTerms: "15 days", leadDays: 5 },
+  { id: 3, name: "HealthCo Distributors", contact: "0722-555-666", paymentTerms: "Cash", leadDays: 1 },
 ];
+const initPrices = [
+  { drugId: 1, vendorId: 1, price: 14, date: "2026-05-01" },
+  { drugId: 1, vendorId: 2, price: 12, date: "2026-05-10" },
+  { drugId: 1, vendorId: 3, price: 16, date: "2026-06-01" },
+  { drugId: 2, vendorId: 1, price: 5, date: "2026-05-01" },
+  { drugId: 2, vendorId: 2, price: 4.5, date: "2026-05-15" },
+  { drugId: 2, vendorId: 3, price: 9.5, date: "2026-06-01" },
+  { drugId: 3, vendorId: 1, price: 8, date: "2026-05-01" },
+  { drugId: 3, vendorId: 2, price: 7.5, date: "2026-06-01" },
+  { drugId: 4, vendorId: 1, price: 20, date: "2026-05-01" },
+  { drugId: 4, vendorId: 2, price: 18, date: "2026-06-01" },
+  { drugId: 4, vendorId: 3, price: 38, date: "2026-06-01" },
+];
+const initOrders = [
+  { id: 1, drugId: 2, vendorId: 1, qty: 200, unitPrice: 5, status: "Pending", date: "2026-06-10", notes: "" },
+];
+const CATS = ["All", "Antibiotic", "Analgesic", "Antidiabetic", "Statin", "Antifungal", "Antihistamine", "Other"];
 
-function Badge({c,t}){return <span className={`badge ${c}`}>{t}</span>}
-function SupBadge({s}){return <span className={`badge sup-${s}`}>{SUP_ICONS[s]} {s}</span>}
-function F({label,children}){return <div className="field"><div className="flabel">{label}</div>{children}</div>}
-function Grid2({children,cols}){return <div style={{display:"grid",gridTemplateColumns:cols||"1fr 1fr",gap:"0 14px"}}>{children}</div>}
+function Badge({ color, text }) {
+  const s = { green: ["#e6f4ea","#2d6a4f"], red: ["#fdecea","#a61c00"], amber: ["#fff3e0","#7c4d00"], blue: ["#e3f2fd","#0d47a1"], gray: ["#f1f0eb","#5a5955"] }[color] || ["#f1f0eb","#5a5955"];
+  return <span style={{ background: s[0], color: s[1], padding: "2px 10px", borderRadius: 12, fontSize: 12, fontWeight: 500, whiteSpace: "nowrap" }}>{text}</span>;
+}
+function Card({ children, style }) {
+  return <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: 12, padding: "1rem 1.25rem", ...style }}>{children}</div>;
+}
+function Metric({ label, value, sub, color }) {
+  const c = { green: "#2d6a4f", red: "#a61c00", amber: "#7c4d00" }[color] || "var(--color-text-primary)";
+  return (
+    <div style={{ background: "var(--color-background-secondary)", borderRadius: 8, padding: "1rem" }}>
+      <div style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 500, color: c }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+}
+function Inp({ label, ...p }) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      {label && <div style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 4 }}>{label}</div>}
+      <input {...p} style={{ width: "100%", boxSizing: "border-box" }} />
+    </div>
+  );
+}
+function Sel({ label, children, ...p }) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      {label && <div style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 4 }}>{label}</div>}
+      <select {...p} style={{ width: "100%", boxSizing: "border-box" }}>{children}</select>
+    </div>
+  );
+}
 
-export default function App(){
-  const [tab,setTab]=useState("Dashboard");
-  const [drugs,setDrugs]=useState(initDrugs);
-  const [prices,setPrices]=useState(initPrices);
-  const [lpos,setLpos]=useState([]);
-  const [pharmacyName,setPharmacyName]=useState("My Pharmacy");
+export default function App() {
+  const [tab, setTab] = useState("Dashboard");
+  const [drugs, setDrugs] = useState(initDrugs);
+  const [vendors, setVendors] = useState(initVendors);
+  const [prices, setPrices] = useState(initPrices);
+  const [orders, setOrders] = useState(initOrders);
 
-  const lowStock=drugs.filter(d=>d.stock<=d.reorderLevel);
-  const getPrice=(drugId,supplier)=>prices.find(p=>p.drugId===drugId&&p.supplier===supplier)?.price||null;
-  const bestSupplier=drugId=>{const ps=prices.filter(p=>p.drugId===drugId);return ps.length?ps.reduce((a,b)=>a.price<b.price?a:b):null;};
-  const addDrug=d=>setDrugs(p=>[...p,{...d,id:Date.now()}]);
-  const updatePrice=(drugId,supplier,price)=>setPrices(p=>{
-    const ex=p.find(x=>x.drugId===drugId&&x.supplier===supplier);
-    return ex?p.map(x=>x.drugId===drugId&&x.supplier===supplier?{...x,price:Number(price)}:x):[...p,{drugId,supplier,price:Number(price)}];
-  });
-  const saveLPO=lpo=>setLpos(p=>[lpo,...p]);
+  const vendorName = id => vendors.find(v => v.id === id)?.name || "-";
+  const drugName = id => drugs.find(d => d.id === id)?.name || "-";
+  const lowStock = drugs.filter(d => d.stock <= d.reorderLevel);
+  const pendingDrugIds = new Set(orders.filter(o => o.status === "Pending").map(o => o.drugId));
 
-  const shared={drugs,prices,lpos,lowStock,getPrice,bestSupplier,addDrug,updatePrice,saveLPO,pharmacyName,setPharmacyName,setDrugs};
+  const bestPrice = drugId => {
+    const ps = prices.filter(p => p.drugId === drugId);
+    return ps.length ? ps.reduce((a, b) => a.price < b.price ? a : b) : null;
+  };
+  const margin = drug => {
+    const bp = bestPrice(drug.id);
+    return bp ? ((drug.sellingPrice - bp.price) / drug.sellingPrice * 100).toFixed(1) : null;
+  };
 
-  return(
-    <div>
-      {/* Header */}
-      <div className="header no-print" style={{height:64}}>
-        <div className="header-logo">💊</div>
+  const addDrug = d => setDrugs(p => [...p, { ...d, id: Date.now() }]);
+  const addVendor = v => setVendors(p => [...p, { ...v, id: Date.now() }]);
+  const addPrice = p => setPrices(pr => [...pr, p]);
+  const addOrder = o => setOrders(p => [...p, { ...o, id: Date.now() }]);
+  const updateOrder = (id, status) => setOrders(p => p.map(o => o.id === id ? { ...o, status } : o));
+  const receiveOrder = o => {
+    setDrugs(p => p.map(d => d.id === o.drugId ? { ...d, stock: d.stock + Number(o.qty) } : d));
+    updateOrder(o.id, "Received");
+  };
+
+  const shared = { drugs, vendors, prices, orders, bestPrice, margin, pendingDrugIds, addDrug, addVendor, addPrice, addOrder, updateOrder, receiveOrder, vendorName, drugName, lowStock };
+
+  return (
+    <div style={{ fontFamily: "var(--font-sans)", paddingBottom: "2rem" }}>
+      <div style={{ background: "var(--color-background-primary)", borderBottom: "0.5px solid var(--color-border-tertiary)", padding: "1rem 1.5rem", display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: "#1d9e75", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>💊</div>
         <div>
-          <div className="header-title">PharmManager</div>
-          <div className="header-sub">Procurement & Price Intelligence</div>
+          <div style={{ fontWeight: 500, fontSize: 16 }}>PharmManager</div>
+          <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Inventory & Procurement</div>
         </div>
-        {lowStock.length>0&&<div className="header-badge">⚠ {lowStock.length} Low Stock</div>}
+        {lowStock.length > 0 && <div style={{ marginLeft: "auto" }}><Badge color="red" text={`⚠ ${lowStock.length} low stock`} /></div>}
       </div>
-
-      {/* Tabs */}
-      <div className="tabs no-print">
-        {TABS.map(t=>(
-          <button key={t.id} className={`tab-btn${tab===t.id?" tab-active":""}`} onClick={()=>setTab(t.id)}>
-            <span>{t.icon}</span>{t.id}
-          </button>
+      <div style={{ display: "flex", gap: 2, padding: "0.75rem 1.5rem 0", overflowX: "auto", borderBottom: "0.5px solid var(--color-border-tertiary)", background: "var(--color-background-primary)" }}>
+        {TABS.map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{ padding: "6px 14px", borderRadius: "6px 6px 0 0", border: "none", cursor: "pointer", fontSize: 14, background: tab === t ? "var(--color-background-secondary)" : "transparent", color: tab === t ? "var(--color-text-primary)" : "var(--color-text-secondary)", fontWeight: tab === t ? 500 : 400, borderBottom: tab === t ? "2px solid #1d9e75" : "none", whiteSpace: "nowrap" }}>{t}</button>
         ))}
       </div>
-
-      {/* Content */}
-      <div style={{padding:"22px 18px",maxWidth:1140,margin:"0 auto"}}>
-        {tab==="Dashboard"&&<Dashboard {...shared}/>}
-        {tab==="Inventory"&&<Inventory {...shared}/>}
-        {tab==="Price Compare"&&<PriceCompare {...shared}/>}
-        {tab==="Create LPO"&&<CreateLPO {...shared}/>}
-        {tab==="LPO History"&&<LPOHistory {...shared}/>}
+      <div style={{ padding: "1.5rem" }}>
+        {tab === "Dashboard" && <Dashboard {...shared} />}
+        {tab === "Inventory" && <Inventory {...shared} />}
+        {tab === "Orders" && <Orders {...shared} />}
+        {tab === "Vendors" && <VendorTab {...shared} />}
+        {tab === "Price Compare" && <PriceCompare {...shared} />}
+        {tab === "Profitability" && <Profitability {...shared} />}
       </div>
     </div>
   );
 }
 
-/* ════════════════ DASHBOARD ════════════════ */
-function Dashboard({drugs,lowStock,lpos,bestSupplier}){
-  const lossItems=drugs.filter(d=>{const b=bestSupplier(d.id);return b&&b.price>=d.sellingPrice;});
-  const todayLPOs=lpos.filter(l=>l.date===new Date().toLocaleDateString("en-KE")).length;
-  const totalLPOValue=lpos.reduce((s,l)=>s+l.total,0);
-
-  return(
+function Dashboard({ drugs, orders, lowStock, bestPrice, margin, vendors }) {
+  const lossItems = drugs.filter(d => { const m = margin(d); return m !== null && parseFloat(m) < 0; });
+  const margins = drugs.map(d => margin(d)).filter(Boolean).map(parseFloat);
+  const avgMargin = margins.length ? (margins.reduce((a, b) => a + b, 0) / margins.length).toFixed(1) : "—";
+  const pendingCount = orders.filter(o => o.status === "Pending").length;
+  return (
     <div>
-      <div className="metric-grid">
-        <div className="metric metric-g"><div className="metric-label">Total Drugs</div><div className="metric-value" style={{color:"#166534"}}>{drugs.length}</div><div className="metric-sub">in inventory</div></div>
-        <div className="metric metric-r"><div className="metric-label">Low Stock</div><div className="metric-value" style={{color:"#991b1b"}}>{lowStock.length}</div><div className="metric-sub">need reorder now</div></div>
-        <div className="metric metric-b"><div className="metric-label">LPOs Raised</div><div className="metric-value" style={{color:"#1e40af"}}>{lpos.length}</div><div className="metric-sub">KES {totalLPOValue.toFixed(0)} total</div></div>
-        <div className="metric metric-a"><div className="metric-label">Loss Risk</div><div className="metric-value" style={{color:"#92400e"}}>{lossItems.length}</div><div className="metric-sub">selling below cost</div></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 12, marginBottom: 20 }}>
+        <Metric label="Total Drugs" value={drugs.length} />
+        <Metric label="Low Stock" value={lowStock.length} color={lowStock.length > 0 ? "red" : "green"} sub="need reorder" />
+        <Metric label="Pending Orders" value={pendingCount} color="amber" />
+        <Metric label="Avg Margin" value={avgMargin + "%"} color={parseFloat(avgMargin) > 20 ? "green" : parseFloat(avgMargin) > 0 ? "amber" : "red"} />
+        <Metric label="Loss Items" value={lossItems.length} color={lossItems.length > 0 ? "red" : "green"} sub="check pricing" />
       </div>
-
-      {/* Supplier legend */}
-      <div className="card">
-        <div className="card-title">🏪 Your Suppliers</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-          {["Eastleigh","Bilova","Signature","Krishna","Medispec","Firstmile"].map(s=>(
-            <div key={s} style={{display:"flex",alignItems:"center",gap:8,background:"#f9fffe",border:"1.5px solid #d1fae5",borderRadius:10,padding:"8px 14px"}}>
-              <span style={{fontSize:20}}>{SUP_ICONS[s]}</span>
-              <span style={{fontWeight:600,fontSize:14}}>{s}</span>
+      {lowStock.length > 0 && (
+        <Card style={{ marginBottom: 14 }}>
+          <div style={{ fontWeight: 500, color: "#a61c00", marginBottom: 10 }}>⚠ Low Stock Alert</div>
+          {lowStock.map(d => (
+            <div key={d.id} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "0.5px solid var(--color-border-tertiary)", fontSize: 14 }}>
+              <span>{d.name}</span>
+              <span style={{ color: "#a61c00" }}>{d.stock} / {d.reorderLevel} {d.unit}</span>
             </div>
           ))}
-        </div>
-      </div>
-
-      {lowStock.length>0&&(
-        <div className="card" style={{borderColor:"#fca5a5"}}>
-          <div className="card-title" style={{color:"#991b1b"}}>⚠️ Low Stock — Action Required</div>
-          <table>
-            <thead><tr><th>Drug</th><th>Current Stock</th><th>Reorder Level</th><th>Best Supplier</th><th>Best Price</th></tr></thead>
-            <tbody>{lowStock.map(d=>{const b=bestSupplier(d.id);return(
-              <tr key={d.id} style={{background:"#fff5f5"}}>
-                <td style={{fontWeight:600}}>{d.name}</td>
-                <td><span style={{color:"#991b1b",fontWeight:700}}>{d.stock} {d.unit}</span></td>
-                <td>{d.reorderLevel}</td>
-                <td>{b?<SupBadge s={b.supplier}/>:"—"}</td>
-                <td style={{fontWeight:600,color:"#166534"}}>{b?"KES "+b.price:"—"}</td>
-              </tr>
-            );})}
-            </tbody>
-          </table>
-        </div>
+        </Card>
       )}
-
-      {lpos.length>0&&(
-        <div className="card">
-          <div className="card-title">📋 Recent LPOs</div>
-          {lpos.slice(0,5).map(l=>(
-            <div key={l.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #f0fdf4",flexWrap:"wrap",gap:8}}>
-              <span style={{fontWeight:600,color:"#136b50"}}>LPO #{l.lpoNumber}</span>
-              <SupBadge s={l.supplier}/>
-              <span style={{color:"#6b7280",fontSize:13}}>{l.date}</span>
-              <span style={{fontWeight:700}}>KES {l.total.toFixed(0)}</span>
-              <Badge c={l.status==="Received"?"bg":l.status==="Cancelled"?"br":"ba"} t={l.status}/>
-            </div>
-          ))}
-        </div>
+      {lossItems.length > 0 && (
+        <Card style={{ marginBottom: 14 }}>
+          <div style={{ fontWeight: 500, color: "#a61c00", marginBottom: 10 }}>💸 Selling at a Loss</div>
+          {lossItems.map(d => {
+            const bp = bestPrice(d.id);
+            return (
+              <div key={d.id} style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6, padding: "6px 0", borderBottom: "0.5px solid var(--color-border-tertiary)", fontSize: 14 }}>
+                <span>{d.name}</span>
+                <span>Buy: KES {bp?.price} → Sell: KES {d.sellingPrice} = <Badge color="red" text={margin(d) + "% margin"} /></span>
+              </div>
+            );
+          })}
+        </Card>
       )}
+      <Card>
+        <div style={{ fontWeight: 500, marginBottom: 10 }}>Recent Orders</div>
+        {orders.length === 0 && <div style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>No orders yet.</div>}
+        {orders.slice().reverse().slice(0, 5).map(o => (
+          <div key={o.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "0.5px solid var(--color-border-tertiary)", fontSize: 14 }}>
+            <span>{drugs.find(d => d.id === o.drugId)?.name}</span>
+            <span style={{ color: "var(--color-text-secondary)" }}>Qty: {o.qty}</span>
+            <Badge color={o.status === "Pending" ? "amber" : o.status === "Received" ? "green" : "gray"} text={o.status} />
+          </div>
+        ))}
+      </Card>
     </div>
   );
 }
 
-/* ════════════════ INVENTORY ════════════════ */
-function Inventory({drugs,bestSupplier,addDrug}){
-  const [show,setShow]=useState(false);
-  const [search,setSearch]=useState("");
-  const empty={name:"",category:"Antibiotic",stock:"",reorderLevel:"",unit:"tabs",sellingPrice:"",expiryDate:""};
-  const [f,setF]=useState(empty);
-  const filtered=drugs.filter(d=>d.name.toLowerCase().includes(search.toLowerCase()));
+function Inventory({ drugs, pendingDrugIds, margin, bestPrice, addDrug }) {
+  const [search, setSearch] = useState("");
+  const [cat, setCat] = useState("All");
+  const [show, setShow] = useState(false);
+  const [f, setF] = useState({ name: "", category: "Other", stock: "", reorderLevel: "", unit: "tabs", sellingPrice: "", expiryDate: "" });
+  const filtered = drugs.filter(d => (cat === "All" || d.category === cat) && d.name.toLowerCase().includes(search.toLowerCase()));
 
-  function save(){
-    if(!f.name||!f.stock||!f.sellingPrice)return alert("Name, stock and selling price are required.");
-    addDrug({...f,stock:Number(f.stock),reorderLevel:Number(f.reorderLevel)||0,sellingPrice:Number(f.sellingPrice)});
-    setF(empty);setShow(false);
+  function save() {
+    if (!f.name || !f.stock || !f.reorderLevel || !f.sellingPrice) return;
+    addDrug({ ...f, stock: Number(f.stock), reorderLevel: Number(f.reorderLevel), sellingPrice: Number(f.sellingPrice) });
+    setF({ name: "", category: "Other", stock: "", reorderLevel: "", unit: "tabs", sellingPrice: "", expiryDate: "" });
+    setShow(false);
   }
 
-  return(
+  return (
     <div>
-      <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"center",flexWrap:"wrap"}}>
-        <input placeholder="🔍 Search drugs…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:160}}/>
-        <button className="btn-green" onClick={()=>setShow(!show)}>+ Add Drug</button>
+      <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+        <input placeholder="Search drugs…" value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, minWidth: 140 }} />
+        <select value={cat} onChange={e => setCat(e.target.value)}>{CATS.map(c => <option key={c}>{c}</option>)}</select>
+        <button onClick={() => setShow(!show)} style={{ background: "#1d9e75", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 500 }}>+ Add Drug</button>
       </div>
-
-      {show&&(
-        <div className="card">
-          <div className="card-title">➕ Add New Drug</div>
-          <Grid2>
-            <F label="Drug Name *"><input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))}/></F>
-            <F label="Category"><select value={f.category} onChange={e=>setF(p=>({...p,category:e.target.value}))}>
-              {["Antibiotic","Analgesic","Antidiabetic","Statin","GI","Antifungal","Antihistamine","Other"].map(c=><option key={c}>{c}</option>)}
-            </select></F>
-            <F label="Current Stock *"><input type="number" value={f.stock} onChange={e=>setF(p=>({...p,stock:e.target.value}))}/></F>
-            <F label="Reorder Level"><input type="number" value={f.reorderLevel} onChange={e=>setF(p=>({...p,reorderLevel:e.target.value}))}/></F>
-            <F label="Unit"><select value={f.unit} onChange={e=>setF(p=>({...p,unit:e.target.value}))}>
-              {["tabs","caps","ml","vials","sachets","bottles","units"].map(u=><option key={u}>{u}</option>)}
-            </select></F>
-            <F label="Selling Price (KES) *"><input type="number" value={f.sellingPrice} onChange={e=>setF(p=>({...p,sellingPrice:e.target.value}))}/></F>
-            <F label="Expiry Date"><input type="date" value={f.expiryDate} onChange={e=>setF(p=>({...p,expiryDate:e.target.value}))}/></F>
-          </Grid2>
-          <div style={{display:"flex",gap:8,marginTop:4}}>
-            <button className="btn-green" onClick={save}>Save Drug</button>
-            <button onClick={()=>setShow(false)}>Cancel</button>
+      {show && (
+        <Card style={{ marginBottom: 14 }}>
+          <div style={{ fontWeight: 500, marginBottom: 12 }}>Add New Drug</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+            <Inp label="Drug Name" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} />
+            <Sel label="Category" value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))}>
+              {CATS.filter(c => c !== "All").map(c => <option key={c}>{c}</option>)}
+            </Sel>
+            <Inp label="Current Stock" type="number" value={f.stock} onChange={e => setF(p => ({ ...p, stock: e.target.value }))} />
+            <Inp label="Reorder Level" type="number" value={f.reorderLevel} onChange={e => setF(p => ({ ...p, reorderLevel: e.target.value }))} />
+            <Sel label="Unit" value={f.unit} onChange={e => setF(p => ({ ...p, unit: e.target.value }))}>
+              {["tabs","caps","ml","vials","sachets","bottles","units"].map(u => <option key={u}>{u}</option>)}
+            </Sel>
+            <Inp label="Selling Price (KES)" type="number" value={f.sellingPrice} onChange={e => setF(p => ({ ...p, sellingPrice: e.target.value }))} />
+            <Inp label="Expiry Date" type="date" value={f.expiryDate} onChange={e => setF(p => ({ ...p, expiryDate: e.target.value }))} />
           </div>
-        </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+            <button onClick={save} style={{ background: "#1d9e75", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer", fontWeight: 500 }}>Save</button>
+            <button onClick={() => setShow(false)} style={{ borderRadius: 8, padding: "8px 14px", cursor: "pointer" }}>Cancel</button>
+          </div>
+        </Card>
       )}
-
-      <div className="card" style={{padding:0,overflow:"hidden"}}>
-        <div style={{overflowX:"auto"}}>
-          <table>
-            <thead><tr><th>Drug Name</th><th>Category</th><th>Stock</th><th>Reorder</th><th>Sell Price</th><th>Best Supplier</th><th>Best Buy</th><th>Margin</th><th>Status</th></tr></thead>
-            <tbody>{filtered.map(d=>{
-              const b=bestSupplier(d.id);
-              const isLow=d.stock<=d.reorderLevel;
-              const m=b?((d.sellingPrice-b.price)/d.sellingPrice*100).toFixed(1):null;
-              return(
-                <tr key={d.id} style={{background:isLow?"#fff5f5":""}}>
-                  <td style={{fontWeight:600}}>{d.name}</td>
-                  <td><Badge c="bt" t={d.category}/></td>
-                  <td style={{fontWeight:700,color:isLow?"#991b1b":"#166534"}}>{d.stock} {d.unit}</td>
-                  <td style={{color:"#6b7280"}}>{d.reorderLevel}</td>
-                  <td style={{fontWeight:600}}>KES {d.sellingPrice}</td>
-                  <td>{b?<SupBadge s={b.supplier}/>:"—"}</td>
-                  <td style={{fontWeight:600,color:"#166534"}}>{b?"KES "+b.price:"—"}</td>
-                  <td>{m!==null?<Badge c={parseFloat(m)<0?"br":parseFloat(m)<20?"ba":"bg"} t={m+"%"}/>:<Badge c="bgr" t="No prices"/>}</td>
-                  <td>{isLow?<Badge c="br" t="⚠ Low"/>:<Badge c="bg" t="✓ OK"/>}</td>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <thead>
+            <tr style={{ background: "var(--color-background-secondary)" }}>
+              {["Drug Name","Category","Stock","Reorder At","Sell Price","Margin","Expiry","Status"].map(h => (
+                <th key={h} style={{ padding: "8px 10px", fontWeight: 500, color: "var(--color-text-secondary)", fontSize: 12, textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(d => {
+              const m = margin(d); const isLow = d.stock <= d.reorderLevel; const isLoss = m !== null && parseFloat(m) < 0;
+              return (
+                <tr key={d.id} style={{ borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
+                  <td style={{ padding: "8px 10px", fontWeight: 500 }}>{d.name}</td>
+                  <td style={{ padding: "8px 10px", color: "var(--color-text-secondary)" }}>{d.category}</td>
+                  <td style={{ padding: "8px 10px", color: isLow ? "#a61c00" : "inherit" }}>{d.stock} {d.unit}</td>
+                  <td style={{ padding: "8px 10px", color: "var(--color-text-secondary)" }}>{d.reorderLevel}</td>
+                  <td style={{ padding: "8px 10px" }}>KES {d.sellingPrice}</td>
+                  <td style={{ padding: "8px 10px" }}>{m !== null ? <Badge color={isLoss ? "red" : parseFloat(m) > 30 ? "green" : "amber"} text={m + "%"} /> : <Badge color="gray" text="No price" />}</td>
+                  <td style={{ padding: "8px 10px", color: "var(--color-text-secondary)", fontSize: 12 }}>{d.expiryDate || "—"}</td>
+                  <td style={{ padding: "8px 10px" }}>{pendingDrugIds.has(d.id) ? <Badge color="amber" text="On Order" /> : isLow ? <Badge color="red" text="Low Stock" /> : <Badge color="green" text="OK" />}</td>
                 </tr>
               );
-            })}</tbody>
-          </table>
-        </div>
+            })}
+          </tbody>
+        </table>
+        {filtered.length === 0 && <div style={{ color: "var(--color-text-secondary)", padding: "1rem", textAlign: "center" }}>No drugs found.</div>}
       </div>
     </div>
   );
 }
 
-/* ════════════════ PRICE COMPARE ════════════════ */
-function PriceCompare({drugs,getPrice,updatePrice,bestSupplier}){
-  const [editing,setEditing]=useState(null);
-  const [editVal,setEditVal]=useState("");
-  const [search,setSearch]=useState("");
-  const [hl,setHl]=useState("");
-  const filtered=drugs.filter(d=>d.name.toLowerCase().includes(search.toLowerCase()));
+function Orders({ drugs, vendors, prices, pendingDrugIds, addOrder, updateOrder, receiveOrder, drugName, vendorName, orders }) {
+  const [show, setShow] = useState(false);
+  const [f, setF] = useState({ drugId: "", vendorId: "", qty: "", unitPrice: "", notes: "" });
+  const [warn, setWarn] = useState("");
 
-  function startEdit(drugId,s,cur){setEditing(`${drugId}_${s}`);setEditVal(cur||"");}
-  function saveEdit(drugId,s){if(editVal!=="")updatePrice(drugId,s,Number(editVal));setEditing(null);}
+  function onDrugChange(drugId) {
+    setF(p => ({ ...p, drugId, vendorId: "", unitPrice: "" }));
+    setWarn(pendingDrugIds.has(Number(drugId)) ? "⚠ This drug already has a pending order. Confirm before ordering again." : "");
+  }
+  function onVendorChange(vendorId) {
+    const drug = drugs.find(d => d.id === Number(f.drugId));
+    const pe = prices.find(p => p.drugId === Number(f.drugId) && p.vendorId === Number(vendorId));
+    setF(p => ({ ...p, vendorId, unitPrice: pe ? pe.price : "" }));
+    if (drug && pe && pe.price >= drug.sellingPrice) setWarn(`💸 Loss alert: vendor price KES ${pe.price} ≥ selling price KES ${drug.sellingPrice}`);
+    else if (!pendingDrugIds.has(Number(f.drugId))) setWarn("");
+  }
+  function placeOrder() {
+    if (!f.drugId || !f.vendorId || !f.qty || !f.unitPrice) return;
+    addOrder({ ...f, drugId: Number(f.drugId), vendorId: Number(f.vendorId), qty: Number(f.qty), unitPrice: Number(f.unitPrice), status: "Pending", date: new Date().toISOString().slice(0, 10) });
+    setF({ drugId: "", vendorId: "", qty: "", unitPrice: "", notes: "" });
+    setWarn(""); setShow(false);
+  }
 
-  return(
+  return (
     <div>
-      <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-        <input placeholder="🔍 Search drugs…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:160}}/>
-        <select value={hl} onChange={e=>setHl(e.target.value)} style={{width:"auto",minWidth:160}}>
-          <option value="">Highlight a supplier…</option>
-          {SUPPLIERS.map(s=><option key={s}>{SUP_ICONS[s]} {s}</option>)}
-        </select>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+        <button onClick={() => setShow(!show)} style={{ background: "#1d9e75", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 500 }}>+ New Order</button>
       </div>
+      {show && (
+        <Card style={{ marginBottom: 14 }}>
+          <div style={{ fontWeight: 500, marginBottom: 12 }}>Create Purchase Order</div>
+          {warn && <div style={{ background: "#fdecea", color: "#a61c00", borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 13 }}>{warn}</div>}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+            <Sel label="Drug" value={f.drugId} onChange={e => onDrugChange(e.target.value)}>
+              <option value="">Select drug…</option>
+              {drugs.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </Sel>
+            <Sel label="Vendor" value={f.vendorId} onChange={e => onVendorChange(e.target.value)} disabled={!f.drugId}>
+              <option value="">Select vendor…</option>
+              {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </Sel>
+            <Inp label="Quantity" type="number" value={f.qty} onChange={e => setF(p => ({ ...p, qty: e.target.value }))} />
+            <Inp label="Unit Price (KES)" type="number" step="0.01" value={f.unitPrice} onChange={e => setF(p => ({ ...p, unitPrice: e.target.value }))} />
+          </div>
+          <Inp label="Notes / Negotiation terms" value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} placeholder="e.g. negotiated 10% discount" />
+          {f.qty && f.unitPrice && <div style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 10 }}>Total: <strong>KES {(f.qty * f.unitPrice).toFixed(0)}</strong></div>}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={placeOrder} style={{ background: "#1d9e75", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer", fontWeight: 500 }}>Place Order</button>
+            <button onClick={() => setShow(false)} style={{ borderRadius: 8, padding: "8px 14px", cursor: "pointer" }}>Cancel</button>
+          </div>
+        </Card>
+      )}
+      {orders.length === 0 && <div style={{ color: "var(--color-text-secondary)", textAlign: "center", padding: "2rem" }}>No orders yet.</div>}
+      {orders.slice().reverse().map(o => (
+        <Card key={o.id} style={{ marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <div style={{ fontWeight: 500, fontSize: 15 }}>{drugName(o.drugId)}</div>
+              <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>Vendor: {vendorName(o.vendorId)} · {o.date}</div>
+              <div style={{ fontSize: 13, marginTop: 2 }}>Qty: {o.qty} · KES {o.unitPrice}/unit · <strong>Total: KES {(o.qty * o.unitPrice).toFixed(0)}</strong></div>
+              {o.notes && <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 2 }}>📝 {o.notes}</div>}
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <Badge color={o.status === "Pending" ? "amber" : o.status === "Received" ? "green" : "gray"} text={o.status} />
+              {o.status === "Pending" && <>
+                <button onClick={() => receiveOrder(o)} style={{ background: "#e6f4ea", color: "#2d6a4f", border: "none", borderRadius: 8, padding: "5px 12px", cursor: "pointer", fontSize: 13 }}>Mark Received</button>
+                <button onClick={() => updateOrder(o.id, "Cancelled")} style={{ background: "#fdecea", color: "#a61c00", border: "none", borderRadius: 8, padding: "5px 12px", cursor: "pointer", fontSize: 13 }}>Cancel</button>
+              </>}
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
-      {/* Supplier color key */}
-      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
-        {SUPPLIERS.map(s=><SupBadge key={s} s={s}/>)}
-        <span style={{fontSize:12,color:"#6b7280",alignSelf:"center",marginLeft:8}}>✅ cheapest &nbsp;|&nbsp; ❌ most expensive &nbsp;|&nbsp; Click price to edit</span>
+function VendorTab({ vendors, addVendor }) {
+  const [show, setShow] = useState(false);
+  const [f, setF] = useState({ name: "", contact: "", paymentTerms: "", leadDays: "" });
+  function save() {
+    if (!f.name) return;
+    addVendor({ ...f, leadDays: Number(f.leadDays) || 0 });
+    setF({ name: "", contact: "", paymentTerms: "", leadDays: "" }); setShow(false);
+  }
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+        <button onClick={() => setShow(!show)} style={{ background: "#1d9e75", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 500 }}>+ Add Vendor</button>
       </div>
+      {show && (
+        <Card style={{ marginBottom: 14 }}>
+          <div style={{ fontWeight: 500, marginBottom: 12 }}>Add Vendor</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+            <Inp label="Vendor Name" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} />
+            <Inp label="Contact" value={f.contact} onChange={e => setF(p => ({ ...p, contact: e.target.value }))} />
+            <Inp label="Payment Terms" value={f.paymentTerms} onChange={e => setF(p => ({ ...p, paymentTerms: e.target.value }))} placeholder="e.g. 30 days, Cash" />
+            <Inp label="Lead Time (days)" type="number" value={f.leadDays} onChange={e => setF(p => ({ ...p, leadDays: e.target.value }))} />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={save} style={{ background: "#1d9e75", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer", fontWeight: 500 }}>Save</button>
+            <button onClick={() => setShow(false)} style={{ borderRadius: 8, padding: "8px 14px", cursor: "pointer" }}>Cancel</button>
+          </div>
+        </Card>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12 }}>
+        {vendors.map(v => (
+          <Card key={v.id}>
+            <div style={{ fontWeight: 500, fontSize: 15, marginBottom: 6 }}>{v.name}</div>
+            <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>📞 {v.contact || "—"}</div>
+            <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>💳 {v.paymentTerms || "—"}</div>
+            <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>🚚 {v.leadDays} day lead time</div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-      <div className="card" style={{padding:0,overflow:"hidden"}}>
-        <div style={{overflowX:"auto"}}>
-          <table>
+function PriceCompare({ drugs, vendors, prices, addPrice }) {
+  const [selDrug, setSelDrug] = useState("");
+  const [show, setShow] = useState(false);
+  const [f, setF] = useState({ vendorId: "", price: "", date: new Date().toISOString().slice(0, 10) });
+  const drug = drugs.find(d => d.id === Number(selDrug));
+  const dp = prices.filter(p => p.drugId === Number(selDrug));
+  const minP = dp.length ? Math.min(...dp.map(p => p.price)) : null;
+
+  function save() {
+    if (!f.vendorId || !f.price) return;
+    addPrice({ drugId: Number(selDrug), vendorId: Number(f.vendorId), price: Number(f.price), date: f.date });
+    setF({ vendorId: "", price: "", date: new Date().toISOString().slice(0, 10) }); setShow(false);
+  }
+
+  return (
+    <div>
+      <Card style={{ marginBottom: 14 }}>
+        <div style={{ fontWeight: 500, marginBottom: 10 }}>Compare Vendor Prices</div>
+        <Sel label="Select Drug" value={selDrug} onChange={e => setSelDrug(e.target.value)}>
+          <option value="">Choose a drug…</option>
+          {drugs.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+        </Sel>
+      </Card>
+      {selDrug && drug && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+            <div><span style={{ fontWeight: 500 }}>{drug.name}</span><span style={{ color: "var(--color-text-secondary)", fontSize: 13, marginLeft: 8 }}>Selling at KES {drug.sellingPrice}</span></div>
+            <button onClick={() => setShow(!show)} style={{ background: "#1d9e75", color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13 }}>+ Add Price Quote</button>
+          </div>
+          {show && (
+            <Card style={{ marginBottom: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 12px" }}>
+                <Sel label="Vendor" value={f.vendorId} onChange={e => setF(p => ({ ...p, vendorId: e.target.value }))}>
+                  <option value="">Select…</option>
+                  {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </Sel>
+                <Inp label="Price (KES)" type="number" step="0.01" value={f.price} onChange={e => setF(p => ({ ...p, price: e.target.value }))} />
+                <Inp label="Date" type="date" value={f.date} onChange={e => setF(p => ({ ...p, date: e.target.value }))} />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={save} style={{ background: "#1d9e75", color: "#fff", border: "none", borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontWeight: 500 }}>Save Quote</button>
+                <button onClick={() => setShow(false)} style={{ borderRadius: 8, padding: "7px 14px", cursor: "pointer" }}>Cancel</button>
+              </div>
+            </Card>
+          )}
+          {dp.length === 0 && <div style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>No price quotes yet.</div>}
+          {dp.map((p, i) => {
+            const v = vendors.find(v => v.id === p.vendorId);
+            const isBest = p.price === minP;
+            const isLoss = p.price >= drug.sellingPrice;
+            const m = ((drug.sellingPrice - p.price) / drug.sellingPrice * 100).toFixed(1);
+            const barW = minP ? Math.min(100, (minP / p.price) * 100) : 50;
+            return (
+              <Card key={i} style={{ marginBottom: 10, border: isBest ? "1.5px solid #1d9e75" : undefined }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
+                  <div><span style={{ fontWeight: 500 }}>{v?.name || "Unknown"}</span>{isBest && <span style={{ marginLeft: 8, background: "#e6f4ea", color: "#2d6a4f", padding: "2px 8px", borderRadius: 10, fontSize: 12 }}>Best Price</span>}</div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontWeight: 500, fontSize: 16 }}>KES {p.price}</span>
+                    <Badge color={isLoss ? "red" : parseFloat(m) > 30 ? "green" : "amber"} text={m + (isLoss ? "% (LOSS)" : "% margin")} />
+                  </div>
+                </div>
+                <div style={{ background: "var(--color-background-secondary)", borderRadius: 4, height: 6 }}>
+                  <div style={{ width: barW + "%", background: isBest ? "#1d9e75" : isLoss ? "#e24b4a" : "#ef9f27", height: 6, borderRadius: 4 }} />
+                </div>
+                <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 4 }}>Quoted: {p.date} · Lead: {v?.leadDays || "?"} days · {v?.paymentTerms || "?"}</div>
+              </Card>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Profitability({ drugs, prices, vendors, bestPrice, margin }) {
+  const sorted = [...drugs].map(d => {
+    const bp = bestPrice(d.id);
+    const m = margin(d);
+    return { ...d, bestBuyPrice: bp?.price, bestVendor: bp ? vendors.find(v => v.id === bp.vendorId)?.name : null, margin: m };
+  }).sort((a, b) => (parseFloat(b.margin) || -999) - (parseFloat(a.margin) || -999));
+
+  const profitable = sorted.filter(d => d.margin !== null && parseFloat(d.margin) > 0);
+  const loss = sorted.filter(d => d.margin !== null && parseFloat(d.margin) <= 0);
+  const noPricing = sorted.filter(d => d.margin === null);
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 12, marginBottom: 20 }}>
+        <Metric label="Profitable" value={profitable.length} color="green" />
+        <Metric label="Loss-making" value={loss.length} color={loss.length > 0 ? "red" : "green"} />
+        <Metric label="No Price Data" value={noPricing.length} color="amber" />
+        <Metric label="Best Margin" value={sorted[0]?.margin ? sorted[0].margin + "%" : "—"} color="green" sub={sorted[0]?.name?.split(" ")[0]} />
+      </div>
+      {loss.length > 0 && (
+        <Card style={{ marginBottom: 14, border: "1px solid #f09595" }}>
+          <div style={{ fontWeight: 500, color: "#a61c00", marginBottom: 10 }}>🚨 Action Needed — Fix Pricing</div>
+          {loss.map(d => (
+            <div key={d.id} style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6, padding: "8px 0", borderBottom: "0.5px solid var(--color-border-tertiary)", fontSize: 14 }}>
+              <div>
+                <div style={{ fontWeight: 500 }}>{d.name}</div>
+                <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>Best buy: KES {d.bestBuyPrice} from {d.bestVendor}</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div>Sell: KES {d.sellingPrice}</div>
+                <Badge color="red" text={d.margin + "% margin"} />
+                <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 2 }}>Raise to ≥ KES {d.bestBuyPrice ? Math.ceil(d.bestBuyPrice * 1.2) : "?"} for 20% margin</div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+      <Card>
+        <div style={{ fontWeight: 500, marginBottom: 12 }}>All Drugs — Profitability Ranking</div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
-              <tr>
-                <th style={{minWidth:190}}>Drug</th>
-                <th>Sell Price</th>
-                {SUPPLIERS.map(s=>(
-                  <th key={s} style={{background:hl===s?"#dbeafe":"",color:hl===s?"#1e40af":""}}>{SUP_ICONS[s]} {s}</th>
+              <tr style={{ background: "var(--color-background-secondary)" }}>
+                {["Drug","Sell Price","Best Buy","Best Vendor","Margin","Recommendation"].map(h => (
+                  <th key={h} style={{ padding: "8px 10px", fontWeight: 500, color: "var(--color-text-secondary)", fontSize: 12, textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
-                <th>Best Supplier</th>
-                <th>Max Saving</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(d=>{
-                const ps=SUPPLIERS.map(s=>({s,p:getPrice(d.id,s)})).filter(x=>x.p!==null);
-                const minP=ps.length?Math.min(...ps.map(x=>x.p)):null;
-                const maxP=ps.length?Math.max(...ps.map(x=>x.p)):null;
-                const best=bestSupplier(d.id);
-                const saving=minP!==null&&maxP!==null&&ps.length>1?(maxP-minP).toFixed(2):null;
-                return(
-                  <tr key={d.id}>
-                    <td style={{fontWeight:600}}>{d.name}</td>
-                    <td style={{fontWeight:600}}>KES {d.sellingPrice}</td>
-                    {SUPPLIERS.map(s=>{
-                      const p=getPrice(d.id,s);
-                      const isBest=p!==null&&p===minP;
-                      const isWorst=p!==null&&p===maxP&&ps.length>1;
-                      const isEditing=editing===`${d.id}_${s}`;
-                      const isHl=hl===s;
-                      return(
-                        <td key={s} style={{background:isHl?"#eff6ff":isBest?"#dcfce7":isWorst?"#fee2e2":"",fontWeight:isBest?700:400,cursor:"pointer"}}
-                          onClick={()=>!isEditing&&startEdit(d.id,s,p)}>
-                          {isEditing?(
-                            <input type="number" value={editVal} autoFocus
-                              onChange={e=>setEditVal(e.target.value)}
-                              onBlur={()=>saveEdit(d.id,s)}
-                              onKeyDown={e=>{if(e.key==="Enter")saveEdit(d.id,s);if(e.key==="Escape")setEditing(null);}}
-                              style={{width:70,padding:"2px 6px",fontSize:13}}/>
-                          ):(
-                            p!==null
-                              ?<span style={{color:isBest?"#166534":isWorst?"#991b1b":""}}>{isBest?"✅ ":isWorst?"❌ ":""}KES {p}</span>
-                              :<span style={{color:"#d1d5db",fontSize:12}}>— add</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                    <td>{best?<SupBadge s={best.supplier}/>:"—"}</td>
-                    <td style={{fontWeight:700,color:"#166534"}}>{saving?"KES "+saving:"—"}</td>
+              {sorted.map(d => {
+                const m = d.margin ? parseFloat(d.margin) : null;
+                return (
+                  <tr key={d.id} style={{ borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
+                    <td style={{ padding: "8px 10px", fontWeight: 500 }}>{d.name}</td>
+                    <td style={{ padding: "8px 10px" }}>KES {d.sellingPrice}</td>
+                    <td style={{ padding: "8px 10px" }}>{d.bestBuyPrice ? "KES " + d.bestBuyPrice : "—"}</td>
+                    <td style={{ padding: "8px 10px", color: "var(--color-text-secondary)", fontSize: 13 }}>{d.bestVendor || "—"}</td>
+                    <td style={{ padding: "8px 10px" }}>{m !== null ? <Badge color={m < 0 ? "red" : m < 20 ? "amber" : "green"} text={d.margin + "%"} /> : <Badge color="gray" text="No data" />}</td>
+                    <td style={{ padding: "8px 10px", fontSize: 12, color: "var(--color-text-secondary)" }}>
+                      {m !== null && m < 0 ? `Raise price to KES ${Math.ceil(d.bestBuyPrice * 1.2)}` : m !== null && m < 20 ? "Renegotiate buy price" : "✓ Healthy margin"}
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
-
-/* ════════════════ CREATE LPO ════════════════ */
-function CreateLPO({drugs,getPrice,bestSupplier,saveLPO,pharmacyName,setPharmacyName}){
-  const [supplier,setSupplier]=useState("");
-  const [items,setItems]=useState([]);
-  const [lpoNumber,setLpoNumber]=useState("LPO-"+String(Date.now()).slice(-5));
-  const [deliveryDate,setDeliveryDate]=useState("");
-  const [notes,setNotes]=useState("");
-  const [saved,setSaved]=useState(false);
-
-  function addItem(){setItems(p=>[...p,{drugId:"",qty:"",unitPrice:""}]);}
-  function removeItem(i){setItems(p=>p.filter((_,idx)=>idx!==i));}
-  function onDrug(i,drugId){
-    const price=supplier?getPrice(Number(drugId),supplier):null;
-    setItems(p=>p.map((it,idx)=>idx===i?{...it,drugId:Number(drugId),unitPrice:price||""}:it));
-  }
-  function onSupChange(s){
-    setSupplier(s);
-    setItems(p=>p.map(it=>{if(!it.drugId)return it;const pr=getPrice(it.drugId,s);return{...it,unitPrice:pr||it.unitPrice};}));
-  }
-
-  const validItems=items.filter(it=>it.drugId&&it.qty&&it.unitPrice);
-  const total=validItems.reduce((s,it)=>s+Number(it.qty)*Number(it.unitPrice),0);
-
-  // Stock warnings — item has enough stock
-  const stockOkWarnings=items.filter(it=>{if(!it.drugId)return false;const d=drugs.find(x=>x.id===it.drugId);return d&&d.stock>d.reorderLevel;});
-  // Cheaper supplier exists
-  const cheaperExists=validItems.filter(it=>{const b=bestSupplier(it.drugId);return b&&supplier&&b.supplier!==supplier&&b.price<Number(it.unitPrice);});
-
-  function handlePrint(){
-    if(!supplier)return alert("Please select a supplier first.");
-    if(validItems.length===0)return alert("Add at least one item.");
-    window.print();
-  }
-
-  function handleSave(){
-    if(!supplier||validItems.length===0)return alert("Select supplier and add items.");
-    saveLPO({lpoNumber,supplier,items:validItems.map(it=>({...it,drugName:drugs.find(d=>d.id===it.drugId)?.name,unit:drugs.find(d=>d.id===it.drugId)?.unit})),total,notes,status:"Pending",deliveryDate,date:new Date().toLocaleDateString("en-KE")});
-    setSaved(true);
-    setTimeout(()=>{setItems([]);setSupplier("");setNotes("");setDeliveryDate("");setSaved(false);setLpoNumber("LPO-"+String(Date.now()).slice(-5));},1500);
-  }
-
-  const today=new Date().toLocaleDateString("en-KE",{year:"numeric",month:"long",day:"numeric"});
-
-  return(
-    <div>
-      {saved&&<div className="ok" style={{fontSize:15,fontWeight:600}}>✅ LPO saved successfully!</div>}
-
-      {/* Form */}
-      <div className="no-print">
-        <div className="card">
-          <div className="card-title">📋 LPO Details</div>
-          <Grid2 cols="1fr 1fr 1fr">
-            <F label="LPO Number"><input value={lpoNumber} onChange={e=>setLpoNumber(e.target.value)}/></F>
-            <F label="Supplier *">
-              <select value={supplier} onChange={e=>onSupChange(e.target.value)}>
-                <option value="">Select supplier…</option>
-                {SUPPLIERS.map(s=><option key={s}>{SUP_ICONS[s]} {s}</option>)}
-              </select>
-            </F>
-            <F label="Expected Delivery"><input type="date" value={deliveryDate} onChange={e=>setDeliveryDate(e.target.value)}/></F>
-          </Grid2>
-          <F label="Pharmacy Name"><input value={pharmacyName} onChange={e=>setPharmacyName(e.target.value)}/></F>
-        </div>
-
-        {/* Warnings */}
-        {stockOkWarnings.length>0&&(
-          <div className="warn">
-            ⚠️ <strong>Stock Check:</strong> These items may not need reordering yet:<br/>
-            {stockOkWarnings.map(it=>{const d=drugs.find(x=>x.id===it.drugId);return d?<span key={it.drugId} style={{display:"block",marginTop:4,paddingLeft:12}}>• {d.name}: <strong>{d.stock} {d.unit}</strong> in stock (reorder at {d.reorderLevel})</span>:null;})}
-          </div>
-        )}
-        {cheaperExists.length>0&&(
-          <div className="err">
-            💸 <strong>Cheaper options available — you're leaving money on the table:</strong><br/>
-            {cheaperExists.map(it=>{
-              const drug=drugs.find(d=>d.id===it.drugId);
-              const best=bestSupplier(it.drugId);
-              const saving=((Number(it.unitPrice)-best.price)*Number(it.qty)).toFixed(0);
-              return <span key={it.drugId} style={{display:"block",marginTop:4,paddingLeft:12}}>• {drug?.name}: <strong>{best.supplier}</strong> @ KES {best.price} vs KES {it.unitPrice} — Save <strong>KES {saving}</strong> on this order</span>;
-            })}
-          </div>
-        )}
-
-        {/* Items table */}
-        <div className="card">
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div className="card-title" style={{marginBottom:0}}>🛒 Order Items</div>
-            <button className="btn-green" onClick={addItem}>+ Add Item</button>
-          </div>
-
-          {items.length===0&&<div style={{color:"#6b7280",textAlign:"center",padding:"2rem",background:"#f9fffe",borderRadius:10,border:"1.5px dashed #d1fae5"}}>Click <strong>+ Add Item</strong> to start building this LPO</div>}
-
-          {items.map((it,i)=>{
-            const drug=drugs.find(d=>d.id===it.drugId);
-            const isLow=drug&&drug.stock<=drug.reorderLevel;
-            return(
-              <div key={i} style={{display:"grid",gridTemplateColumns:"2.5fr 1fr 1fr 1fr auto",gap:"0 10px",alignItems:"end",marginBottom:10,padding:"12px",background:isLow?"#f0fdf4":"#f9fffe",borderRadius:10,border:`1.5px solid ${isLow?"#6ee7b7":"#e5e7eb"}`}}>
-                <F label="Drug">
-                  <select value={it.drugId||""} onChange={e=>onDrug(i,e.target.value)}>
-                    <option value="">Select drug…</option>
-                    {drugs.map(d=><option key={d.id} value={d.id}>{d.name}{d.stock<=d.reorderLevel?" ⚠️ LOW":""}</option>)}
-                  </select>
-                </F>
-                <F label="Qty"><input type="number" value={it.qty} onChange={e=>setItems(p=>p.map((x,idx)=>idx===i?{...x,qty:e.target.value}:x))} placeholder="0"/></F>
-                <F label={`Price — ${supplier||"KES"}`}><input type="number" step="0.01" value={it.unitPrice} onChange={e=>setItems(p=>p.map((x,idx)=>idx===i?{...x,unitPrice:e.target.value}:x))}/></F>
-                <F label="Line Total"><input readOnly value={it.qty&&it.unitPrice?"KES "+(Number(it.qty)*Number(it.unitPrice)).toFixed(0):""} style={{background:"#f0fdf4",fontWeight:600,color:"#166534"}}/></F>
-                <div style={{paddingBottom:12}}><button className="btn-red" onClick={()=>removeItem(i)} style={{padding:"8px 11px"}}>✕</button></div>
-              </div>
-            );
-          })}
-
-          {validItems.length>0&&<div style={{textAlign:"right",fontSize:20,fontWeight:800,color:"#136b50",marginTop:8,padding:"10px 0",borderTop:"2px solid #d1fae5"}}>Grand Total: KES {total.toFixed(2)}</div>}
-        </div>
-
-        <F label="Notes / Special Instructions"><input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="e.g. urgent, cold chain required, partial delivery ok"/></F>
-
-        <div style={{display:"flex",gap:10,marginTop:4,flexWrap:"wrap"}}>
-          <button className="btn-green" onClick={handlePrint} style={{fontSize:15,padding:"11px 28px"}}>🖨️ Print LPO</button>
-          <button className="btn-blue" onClick={handleSave} style={{fontSize:15,padding:"11px 28px"}}>💾 Save LPO</button>
-        </div>
-      </div>
-
-      {/* ── PRINTABLE LPO ── */}
-      <div className="lpo-print" style={{display:"none"}}>
-        <div style={{textAlign:"center",borderBottom:"3px solid #1d9e75",paddingBottom:16,marginBottom:22}}>
-          <div style={{fontSize:26,fontWeight:800,color:"#136b50"}}>{pharmacyName}</div>
-          <div style={{fontSize:15,letterSpacing:3,marginTop:4,color:"#555"}}>LOCAL PURCHASE ORDER</div>
-        </div>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:22,fontSize:13}}>
-          <div style={{lineHeight:1.8}}><strong>LPO No:</strong> {lpoNumber}<br/><strong>Date:</strong> {today}<br/>{deliveryDate&&<><strong>Delivery By:</strong> {deliveryDate}</>}</div>
-          <div style={{textAlign:"right",lineHeight:1.8}}><strong>Supplier:</strong> {supplier}</div>
-        </div>
-        <table style={{marginBottom:20,fontSize:13,borderCollapse:"collapse",width:"100%"}}>
-          <thead>
-            <tr style={{background:"#f0fdf4"}}>
-              {["#","Description","Qty","Unit","Unit Price (KES)","Total (KES)"].map(h=><th key={h} style={{border:"1px solid #ccc",padding:"9px 10px",textAlign:h==="#"||h==="Qty"?"center":"left"}}>{h}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {validItems.map((it,i)=>{const d=drugs.find(x=>x.id===it.drugId);return(
-              <tr key={i}>
-                <td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"center"}}>{i+1}</td>
-                <td style={{border:"1px solid #ccc",padding:"8px 10px"}}>{d?.name}</td>
-                <td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"center"}}>{it.qty}</td>
-                <td style={{border:"1px solid #ccc",padding:"8px 10px"}}>{d?.unit}</td>
-                <td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"right"}}>{Number(it.unitPrice).toFixed(2)}</td>
-                <td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"right",fontWeight:600}}>{(Number(it.qty)*Number(it.unitPrice)).toFixed(2)}</td>
-              </tr>
-            );})}
-            {[...Array(Math.max(0,6-validItems.length))].map((_,i)=>(
-              <tr key={"e"+i}>{[1,2,3,4,5,6].map(c=><td key={c} style={{border:"1px solid #ccc",padding:"8px 10px"}}>&nbsp;</td>)}</tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr style={{fontWeight:800,background:"#f0fdf4"}}>
-              <td colSpan={5} style={{border:"1px solid #ccc",padding:"10px",textAlign:"right",fontSize:15}}>GRAND TOTAL</td>
-              <td style={{border:"1px solid #ccc",padding:"10px",textAlign:"right",fontSize:15,color:"#136b50"}}>KES {total.toFixed(2)}</td>
-            </tr>
-          </tfoot>
-        </table>
-        {notes&&<div style={{marginBottom:16,fontSize:13,padding:"8px 12px",background:"#f9fffe",borderRadius:6,border:"1px solid #d1fae5"}}><strong>Notes:</strong> {notes}</div>}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:60,marginTop:60,fontSize:13}}>
-          <div><div style={{borderTop:"1.5px solid #000",paddingTop:6,marginTop:40}}>Prepared By</div><div style={{color:"#6b7280",fontSize:11,marginTop:4}}>Name · Signature · Date</div></div>
-          <div><div style={{borderTop:"1.5px solid #000",paddingTop:6,marginTop:40}}>Approved By</div><div style={{color:"#6b7280",fontSize:11,marginTop:4}}>Name · Signature · Date</div></div>
-        </div>
-        <div style={{marginTop:40,fontSize:10,color:"#999",textAlign:"center",borderTop:"1px solid #e5e7eb",paddingTop:10}}>Generated by PharmManager · {today}</div>
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════ LPO HISTORY ════════════════ */
-function LPOHistory({lpos}){
-  if(lpos.length===0)return(
-    <div style={{textAlign:"center",padding:"4rem 2rem",color:"#6b7280"}}>
-      <div style={{fontSize:48,marginBottom:16}}>📋</div>
-      <div style={{fontSize:16,fontWeight:600}}>No LPOs yet</div>
-      <div style={{fontSize:14,marginTop:6}}>Go to "Create LPO" to raise your first order</div>
-    </div>
-  );
-  return(
-    <div>
-      <div style={{fontWeight:700,fontSize:16,color:"#136b50",marginBottom:16}}>{lpos.length} LPO{lpos.length!==1?"s":""} on record</div>
-      {lpos.map(l=>(
-        <div key={l.id} className="card">
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10,marginBottom:12}}>
-            <div>
-              <span style={{fontWeight:800,fontSize:17,color:"#136b50"}}>LPO #{l.lpoNumber}</span>
-              <span style={{marginLeft:10}}><SupBadge s={l.supplier}/></span>
-            </div>
-            <div style={{display:"flex",gap:10,alignItems:"center"}}>
-              <span style={{fontWeight:800,fontSize:16}}>KES {l.total.toFixed(0)}</span>
-              <Badge c={l.status==="Received"?"bg":l.status==="Cancelled"?"br":"ba"} t={l.status}/>
-              <span style={{fontSize:12,color:"#6b7280"}}>{l.date}</span>
-            </div>
-          </div>
-          <table>
-            <thead><tr><th>Drug</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>Total</th></tr></thead>
-            <tbody>{l.items.map((it,i)=>(
-              <tr key={i}>
-                <td style={{fontWeight:500}}>{it.drugName}</td>
-                <td>{it.qty}</td>
-                <td style={{color:"#6b7280"}}>{it.unit}</td>
-                <td>KES {it.unitPrice}</td>
-                <td style={{fontWeight:600,color:"#166534"}}>KES {(Number(it.qty)*Number(it.unitPrice)).toFixed(0)}</td>
-              </tr>
-            ))}</tbody>
-          </table>
-          {l.notes&&<div style={{marginTop:8,fontSize:12,color:"#6b7280"}}>📝 {l.notes}</div>}
-          {l.deliveryDate&&<div style={{marginTop:4,fontSize:12,color:"#6b7280"}}>🚚 Expected: {l.deliveryDate}</div>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
-</body>
-</html>
