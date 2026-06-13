@@ -1,469 +1,506 @@
-import { useState } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PharmManager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet"/>
+<style>
+  body{font-family:system-ui,sans-serif;background:#f8f9fa;margin:0}
+  select,input{border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:14px;width:100%;box-sizing:border-box;background:#fff;outline:none}
+  select:focus,input:focus{border-color:#1d9e75;box-shadow:0 0 0 2px rgba(29,158,117,.15)}
+  button{cursor:pointer;border-radius:8px;font-size:14px;padding:7px 14px;border:1px solid #d1d5db;background:#fff;transition:background .15s}
+  .btn-primary{background:#1d9e75!important;color:#fff!important;border-color:#1d9e75!important}
+  .btn-primary:hover{background:#178a65!important}
+  .btn-danger{background:#fdecea!important;color:#a61c00!important;border-color:#fca5a5!important}
+  .btn-success{background:#e6f4ea!important;color:#2d6a4f!important;border-color:#86efac!important}
+  table{border-collapse:collapse;width:100%}
+  th,td{text-align:left;padding:8px 10px;font-size:14px}
+  thead tr{background:#f3f4f6}
+  tbody tr{border-bottom:1px solid #e5e7eb}
+  .tab-active{border-bottom:2px solid #1d9e75;color:#111;font-weight:500}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:14px}
+  .badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500;white-space:nowrap}
+  .badge-green{background:#e6f4ea;color:#2d6a4f}
+  .badge-red{background:#fdecea;color:#a61c00}
+  .badge-amber{background:#fff3e0;color:#7c4d00}
+  .badge-gray{background:#f3f4f6;color:#6b7280}
+  .badge-blue{background:#e3f2fd;color:#0d47a1}
+  .metric{background:#f3f4f6;border-radius:8px;padding:16px}
+  .metric-label{font-size:13px;color:#6b7280;margin-bottom:4px}
+  .metric-value{font-size:22px;font-weight:500}
+  .metric-sub{font-size:12px;color:#6b7280;margin-top:2px}
+  .warn-box{background:#fdecea;color:#a61c00;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px}
+  .field-label{font-size:13px;color:#6b7280;margin-bottom:4px}
+  .field{margin-bottom:10px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useCallback}=React;
+const TABS=["Dashboard","Inventory","Orders","Vendors","Price Compare","Profitability"];
+const CATS=["All","Antibiotic","Analgesic","Antidiabetic","Statin","Antifungal","Antihistamine","Other"];
+const UNITS=["tabs","caps","ml","vials","sachets","bottles","units"];
 
-const TABS = ["Dashboard", "Goods Received", "Inventory", "Orders", "Vendors", "Flags & Actions"];
-
-// ── Real vendors from the document ──────────────────────────────────────────
-const initVendors = [
-  { id: 1, name: "Blv Chemists Ltd", contact: "Westlands, Nairobi", pin: "P051124101B", vat: "0126065H", paymentTerms: "30 days", leadDays: 1 },
-  { id: 2, name: "Eas Pharmaceutical Co. Ltd", contact: "Eastleigh Branch, Nairobi", pin: "P051208794R", till: "4789846", paymentTerms: "30 days", leadDays: 1 },
+const initDrugs=[
+  {id:1,name:"Amoxicillin 500mg",category:"Antibiotic",stock:120,reorderLevel:50,unit:"caps",sellingPrice:25,expiryDate:"2026-12-01"},
+  {id:2,name:"Paracetamol 500mg",category:"Analgesic",stock:30,reorderLevel:100,unit:"tabs",sellingPrice:8,expiryDate:"2027-03-15"},
+  {id:3,name:"Metformin 850mg",category:"Antidiabetic",stock:200,reorderLevel:80,unit:"tabs",sellingPrice:15,expiryDate:"2026-08-20"},
+  {id:4,name:"Atorvastatin 20mg",category:"Statin",stock:60,reorderLevel:60,unit:"tabs",sellingPrice:35,expiryDate:"2027-01-10"},
+];
+const initVendors=[
+  {id:1,name:"MedSupply Kenya",contact:"0700-111-222",paymentTerms:"30 days",leadDays:3},
+  {id:2,name:"Pharma Direct",contact:"0711-333-444",paymentTerms:"15 days",leadDays:5},
+  {id:3,name:"HealthCo Distributors",contact:"0722-555-666",paymentTerms:"Cash",leadDays:1},
+];
+const initPrices=[
+  {drugId:1,vendorId:1,price:14,date:"2026-05-01"},{drugId:1,vendorId:2,price:12,date:"2026-05-10"},{drugId:1,vendorId:3,price:16,date:"2026-06-01"},
+  {drugId:2,vendorId:1,price:5,date:"2026-05-01"},{drugId:2,vendorId:2,price:4.5,date:"2026-05-15"},{drugId:2,vendorId:3,price:9.5,date:"2026-06-01"},
+  {drugId:3,vendorId:1,price:8,date:"2026-05-01"},{drugId:3,vendorId:2,price:7.5,date:"2026-06-01"},
+  {drugId:4,vendorId:1,price:20,date:"2026-05-01"},{drugId:4,vendorId:2,price:18,date:"2026-06-01"},{drugId:4,vendorId:3,price:38,date:"2026-06-01"},
+];
+const initOrders=[
+  {id:1,drugId:2,vendorId:1,qty:200,unitPrice:5,status:"Pending",date:"2026-06-10",notes:""},
 ];
 
-// ── All items from the GRN ───────────────────────────────────────────────────
-const initItems = [
-  // Bilova SNV00270189 — 04 Jun
-  { id:1,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Montiget Tabs 10mg",           pack:"14s",      qty:9,   unitPrice:800.00,    disc:20, total:5760,  status:"matched",  notes:"" },
-  { id:2,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Cefixime Tabs 400mg",          pack:"10s",      qty:3,   unitPrice:225.19,    disc:10, total:608,   status:"matched",  notes:"" },
-  { id:3,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Zulu MR Tabs",                 pack:"20s",      qty:10,  unitPrice:798.00,    disc:10, total:7182,  status:"matched",  notes:"" },
-  { id:4,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Buscopan Plus Tabs",           pack:"40s",      qty:2,   unitPrice:2508.89,   disc:10, total:4516,  status:"matched",  notes:"" },
-  { id:5,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Ponstan Forte 500mg",          pack:"50s",      qty:4,   unitPrice:1418.95,   disc:5,  total:5392,  status:"matched",  notes:"" },
-  { id:6,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Nystatin Oral Drops",          pack:"30ml",     qty:10,  unitPrice:67.26,     disc:5,  total:639,   status:"matched",  notes:"" },
-  { id:7,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"KLY Lubricating Gel",          pack:"42g",      qty:4,   unitPrice:310.00,    disc:5,  total:1178,  status:"matched",  notes:"" },
-  { id:8,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Montalerg Tabs",               pack:"20s",      qty:10,  unitPrice:1270.00,   disc:15, total:10795, status:"matched",  notes:"" },
-  { id:9,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Robidom SR Caps",              pack:"30s",      qty:4,   unitPrice:3100.00,   disc:10, total:11160, status:"matched",  notes:"" },
-  { id:10, inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Surgical Gloves Size 7.5",     pack:"pair",     qty:10,  unitPrice:40.00,     disc:15, total:340,   status:"matched",  notes:"" },
-  // Bilova SNV00270279 — 05 Jun
-  { id:11, inv:"SNV00270279", date:"2026-06-05", vendorId:1, name:"Taxim O (Cefixime) 200mg",     pack:"10s",      qty:10,  unitPrice:1200.00,   disc:20, total:9600,  status:"matched",  notes:"" },
-  { id:12, inv:"SNV00270279", date:"2026-06-05", vendorId:1, name:"Dexamethasone Inj 4mg/1ml",    pack:"1ml",      qty:10,  unitPrice:12.00,     disc:10, total:108,   status:"matched",  notes:"" },
-  { id:13, inv:"SNV00270279", date:"2026-06-05", vendorId:1, name:"Surgical Gloves Size 7.5",     pack:"pair",     qty:10,  unitPrice:40.00,     disc:15, total:340,   status:"matched",  notes:"" },
-  { id:14, inv:"SNV00270279", date:"2026-06-05", vendorId:1, name:"Dextrose 10% Infusion",        pack:"500ml",    qty:10,  unitPrice:105.05,    disc:5,  total:998,   status:"matched",  notes:"" },
-  // Bilova SNV00270401 — 08 Jun ⚠ No LPO
-  { id:15, inv:"SNV00270401", date:"2026-06-08", vendorId:1, name:"Rontus 650",                   pack:"10s",      qty:30,  unitPrice:null,      disc:null,total:3416, status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:16, inv:"SNV00270401", date:"2026-06-08", vendorId:1, name:"Gastroplus Caps",              pack:"10s",      qty:20,  unitPrice:null,      disc:null,total:13320,status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  // Eastleigh SNV90007350 — 04 Jun
-  { id:17, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Amoxil Syrup Forte 250mg",     pack:"100ml",    qty:10,  unitPrice:659.00,    disc:20, total:5272,  status:"matched",  notes:"" },
-  { id:18, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Augmentin BD Syrup 228mg",     pack:"70ml",     qty:10,  unitPrice:759.25,    disc:20, total:6074,  status:"matched",  notes:"" },
-  { id:19, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Augmentin BD Syrup 457mg",     pack:"70ml",     qty:10,  unitPrice:1185.75,   disc:13, total:10316, status:"matched",  notes:"" },
-  { id:20, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Augmentin BD Tablets 1gm",     pack:"14s",      qty:1,   unitPrice:1890.00,   disc:0,  total:1890,  status:"matched",  notes:"" },
-  { id:21, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Merozip IV 500mg",             pack:"5s",       qty:5,   unitPrice:520.00,    disc:20, total:2080,  status:"matched",  notes:"" },
-  { id:22, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Zupricin Ointment",            pack:"15g",      qty:15,  unitPrice:594.98,    disc:10, total:8032,  status:"matched",  notes:"" },
-  // Eastleigh SNV90007371 — 05 Jun
-  { id:23, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Altacef 500mg (Cefuroxime)",   pack:"10s",      qty:5,   unitPrice:1056.89,   disc:10, total:4756,  status:"matched",  notes:"" },
-  { id:24, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Branular IV Cannula G24",      pack:"each",     qty:200, unitPrice:12.00,     disc:0,  total:2400,  status:"matched",  notes:"" },
-  { id:25, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Crepe Bandage 4\"",            pack:"roll",     qty:48,  unitPrice:30.00,     disc:0,  total:1440,  status:"matched",  notes:"" },
-  { id:26, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Crepe Bandage 6\"",            pack:"roll",     qty:48,  unitPrice:40.00,     disc:0,  total:1920,  status:"matched",  notes:"" },
-  { id:27, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Crepe Bandage 2\"",            pack:"roll",     qty:48,  unitPrice:20.00,     disc:0,  total:960,   status:"matched",  notes:"" },
-  { id:28, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Desteluk 10",                  pack:"30s",      qty:10,  unitPrice:2400.00,   disc:5,  total:22800, status:"matched",  notes:"" },
-  { id:29, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Norash Cream",                 pack:"tube",     qty:5,   unitPrice:330.00,    disc:10, total:1485,  status:"matched",  notes:"" },
-  { id:30, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Nurses Caps Blue",             pack:"100s",     qty:2,   unitPrice:665.79,    disc:5,  total:1265,  status:"matched",  notes:"" },
-  { id:31, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Panadol Advance",              pack:"100s",     qty:4,   unitPrice:585.00,    disc:5,  total:2340,  status:"matched",  notes:"" },
-  { id:32, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Powergesic Plus Gel 30gm",     pack:"tube",     qty:15,  unitPrice:240.00,    disc:15, total:3060,  status:"matched",  notes:"" },
-  { id:33, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Pulmocef 500mg Tabs",          pack:"10s",      qty:10,  unitPrice:250.00,    disc:10, total:2250,  status:"matched",  notes:"" },
-  { id:34, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Rufenac Gel 20g (Diclofenac)", pack:"tube",     qty:20,  unitPrice:25.00,     disc:0,  total:500,   status:"matched",  notes:"" },
-  { id:35, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Transpore 1\"",                pack:"roll",     qty:4,   unitPrice:50.00,     disc:0,  total:200,   status:"matched",  notes:"" },
-  // Eastleigh SNV90007385 — 06 Jun
-  { id:36, inv:"SNV90007385", date:"2026-06-06", vendorId:2, name:"Enzoflam 560mg",              pack:"3x10",     qty:10,  unitPrice:1150.00,   disc:0,  total:11500, status:"matched",  notes:"" },
-  { id:37, inv:"SNV90007385", date:"2026-06-06", vendorId:2, name:"Hemoforce Family Syrup",      pack:"200ml",    qty:6,   unitPrice:207.65,    disc:15, total:1059,  status:"matched",  notes:"" },
-  { id:38, inv:"SNV90007385", date:"2026-06-06", vendorId:2, name:"Ocid Caps 20mg",              pack:"100s",     qty:10,  unitPrice:204.00,    disc:5,  total:1938,  status:"matched",  notes:"" },
-  { id:39, inv:"SNV90007385", date:"2026-06-06", vendorId:2, name:"Pantocid Tabs 40mg",          pack:"50s",      qty:3,   unitPrice:1920.00,   disc:15, total:4896,  status:"matched",  notes:"" },
-  // Eastleigh SNV90007407 — 08 Jun ⚠ No LPO
-  { id:40, inv:"SNV90007407", date:"2026-06-08", vendorId:2, name:"Cotton Wool 400gm",           pack:"bag",      qty:4,   unitPrice:318.61,    disc:10, total:1147,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:41, inv:"SNV90007407", date:"2026-06-08", vendorId:2, name:"Gauze Roll 90cm x100 1.5kg",  pack:"roll",     qty:4,   unitPrice:1500.00,   disc:20, total:4800,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  // Eastleigh SNV90007422 — 09 Jun
-  { id:42, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Atorid 20mg Tabs",            pack:"30s",      qty:2,   unitPrice:1350.00,   disc:5,  total:2565,  status:"partial",  notes:"Partial — 4 more on SNV90007450" },
-  { id:43, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Augmentin BD Syrup 228mg",    pack:"70ml",     qty:15,  unitPrice:759.29,    disc:25, total:8542,  status:"matched",  notes:"" },
-  { id:44, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Augmentin BD Tablets 625mg",  pack:"14s",      qty:10,  unitPrice:1130.00,   disc:0,  total:11300, status:"matched",  notes:"" },
-  { id:45, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Cipladon 1000mg",             pack:"8s",       qty:10,  unitPrice:361.11,    disc:10, total:3250,  status:"partial",  notes:"Partial — more on SNV90007455" },
-  { id:46, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Cipladon 500mg",              pack:"16s",      qty:5,   unitPrice:361.11,    disc:10, total:1625,  status:"partial",  notes:"Partial — balance outstanding" },
-  { id:47, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Clamoxin 625mg Tabs",         pack:"10s",      qty:10,  unitPrice:324.94,    disc:15, total:2762,  status:"matched",  notes:"" },
-  { id:48, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Emitino 4mg Tabs",            pack:"10s",      qty:10,  unitPrice:550.00,    disc:20, total:4400,  status:"excess",   notes:"⚠ 8 extra units vs LPO quantity" },
-  { id:49, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Etorix 90mg",                 pack:"30s",      qty:4,   unitPrice:1903.93,   disc:30, total:5331,  status:"partial",  notes:"Partial — 2 more on SNV90007450" },
-  { id:50, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Losartas HT Tabs",            pack:"30s",      qty:4,   unitPrice:950.00,    disc:12.5,total:3325, status:"discrepancy",notes:"Pack size diff — 20 tabs short" },
-  { id:51, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Nebulizer Mask Adult",        pack:"each",     qty:20,  unitPrice:85.00,     disc:0,  total:1700,  status:"matched",  notes:"" },
-  { id:52, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Nebulizer Mask Paed",         pack:"each",     qty:20,  unitPrice:85.00,     disc:0,  total:1700,  status:"matched",  notes:"" },
-  { id:53, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Needles G21",                 pack:"100s",     qty:10,  unitPrice:105.00,    disc:0,  total:1050,  status:"matched",  notes:"" },
-  { id:54, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Needles G23",                 pack:"100s",     qty:10,  unitPrice:105.00,    disc:0,  total:1050,  status:"matched",  notes:"" },
-  { id:55, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Nexium Sachets 10mg",         pack:"28s",      qty:2,   unitPrice:6535.04,   disc:31.5,total:8953, status:"partial",  notes:"Partial — 8 packets outstanding" },
-  { id:56, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Sabezole-DSR",                pack:"10s",      qty:10,  unitPrice:600.00,    disc:10, total:5400,  status:"matched",  notes:"" },
-  // Eastleigh SNV90007427 — 09 Jun ⚠ No LPO + return
-  { id:57, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Amtel 45mg (RETURNED)",       pack:"30s",      qty:1,   unitPrice:2210.53,   disc:5,  total:-2100, status:"returned", notes:"Returned — credit note due from supplier" },
-  { id:58, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Giving Set",                  pack:"each",     qty:300, unitPrice:13.00,     disc:0,  total:3900,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:59, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Labetalol Inj 100mg/20ml",    pack:"1s",       qty:10,  unitPrice:2100.00,   disc:22.5,total:16275,status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:60, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Mucosolvan Liq 15mg/5ml",     pack:"100ml",    qty:5,   unitPrice:788.32,    disc:7.5,total:3646,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:61, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Rocephin IV 1gm",             pack:"1s",       qty:12,  unitPrice:1740.00,   disc:5,  total:19836, status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:62, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Solusets 150ml",              pack:"each",     qty:100, unitPrice:75.00,     disc:0,  total:7500,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:63, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Taximo O 200mg / Cefixime",   pack:"10s",      qty:20,  unitPrice:1150.00,   disc:20, total:18400, status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  // Eastleigh SNV90007450 — 10 Jun
-  { id:64, inv:"SNV90007450", date:"2026-06-10", vendorId:2, name:"Atorid 20mg Tabs (late)",     pack:"30s",      qty:4,   unitPrice:1350.00,   disc:5,  total:5130,  status:"late",     notes:"Late delivery against 9/6 LPO" },
-  { id:65, inv:"SNV90007450", date:"2026-06-10", vendorId:2, name:"Etorix 90mg (late)",          pack:"30s",      qty:2,   unitPrice:1904.29,   disc:30, total:2666,  status:"late",     notes:"Late delivery — 9/6 LPO — now complete" },
-  { id:66, inv:"SNV90007450", date:"2026-06-10", vendorId:2, name:"Otrivin Adult Drops 0.10%",   pack:"10ml",     qty:1,   unitPrice:734.74,    disc:5,  total:698,   status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  // Eastleigh SNV90007455 — 10 Jun
-  { id:67, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Alzolam 0.5mg Tabs",          pack:"30s",      qty:4,   unitPrice:1350.00,   disc:10, total:4860,  status:"matched",  notes:"10/6 LPO" },
-  { id:68, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Bennetts Saline Nose Spray",  pack:"each",     qty:4,   unitPrice:957.89,    disc:5,  total:3640,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:69, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Candid B Cream 15gm",         pack:"tube",     qty:10,  unitPrice:222.00,    disc:10, total:1998,  status:"matched",  notes:"10/6 LPO" },
-  { id:70, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Cipladon 1000mg (late)",      pack:"8s",       qty:30,  unitPrice:361.07,    disc:10, total:9749,  status:"partial",  notes:"Late delivery — 9/6 LPO — still short" },
-  { id:71, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Ciproken Eye/Ear Drops",      pack:"5ml",      qty:10,  unitPrice:120.00,    disc:10, total:1080,  status:"matched",  notes:"10/6 LPO" },
-  { id:72, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Lantus Solostar 3ml 5-pen",   pack:"pen",      qty:1,   unitPrice:10470.59,  disc:15, total:8900,  status:"partial",  notes:"Partial — 4 pens outstanding" },
-  { id:73, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Nexium 40mg Tabs",            pack:"14s",      qty:4,   unitPrice:740.00,    disc:0,  total:2960,  status:"matched",  notes:"10/6 LPO" },
-  { id:74, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Normal Saline Drops (Nosfree)",pack:"each",    qty:10,  unitPrice:25.00,     disc:0,  total:250,   status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:75, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"On Call Plus Strips",         pack:"50s",      qty:10,  unitPrice:600.00,    disc:0,  total:6000,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:76, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Pediasure Nutri Vanilla",     pack:"400g",     qty:3,   unitPrice:1899.88,   disc:5,  total:6281,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
-  { id:77, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Ventolin Evohaler 200 dose",  pack:"inhaler",  qty:6,   unitPrice:500.00,    disc:0,  total:3000,  status:"excess",   notes:"⚠ 1 extra unit vs LPO qty of 5" },
-];
+function Badge({color,text}){return <span className={`badge badge-${color}`}>{text}</span>}
+function Field({label,children}){return <div className="field"><div className="field-label">{label}</div>{children}</div>}
 
-const STATUS_META = {
-  matched:     { label:"✓ Matched",        color:"green" },
-  no_lpo:      { label:"⚠ No LPO",         color:"red"   },
-  partial:     { label:"◑ Partial",        color:"amber" },
-  excess:      { label:"↑ Excess",         color:"amber" },
-  discrepancy: { label:"≠ Discrepancy",    color:"amber" },
-  returned:    { label:"↩ Returned",       color:"gray"  },
-  late:        { label:"⏱ Late Delivery",  color:"blue"  },
-};
+function App(){
+  const [tab,setTab]=useState("Dashboard");
+  const [drugs,setDrugs]=useState(initDrugs);
+  const [vendors,setVendors]=useState(initVendors);
+  const [prices,setPrices]=useState(initPrices);
+  const [orders,setOrders]=useState(initOrders);
 
-const INVOICES = [
-  { inv:"SNV00270189", vendorId:1, date:"2026-06-04", subtotal:47570  },
-  { inv:"SNV00270279", vendorId:1, date:"2026-06-05", subtotal:11046  },
-  { inv:"SNV00270401", vendorId:1, date:"2026-06-08", subtotal:16736, flag:"no_lpo"  },
-  { inv:"SNV90007350", vendorId:2, date:"2026-06-04", subtotal:33664  },
-  { inv:"SNV90007371", vendorId:2, date:"2026-06-05", subtotal:45376  },
-  { inv:"SNV90007385", vendorId:2, date:"2026-06-06", subtotal:19393  },
-  { inv:"SNV90007407", vendorId:2, date:"2026-06-08", subtotal:5947,  flag:"no_lpo"  },
-  { inv:"SNV90007422", vendorId:2, date:"2026-06-09", subtotal:68353  },
-  { inv:"SNV90007427", vendorId:2, date:"2026-06-09", subtotal:69557, flag:"no_lpo"  },
-  { inv:"SNV90007450", vendorId:2, date:"2026-06-10", subtotal:8494   },
-  { inv:"SNV90007455", vendorId:2, date:"2026-06-10", subtotal:48718  },
-];
+  const vendorName=id=>vendors.find(v=>v.id===id)?.name||"-";
+  const drugName=id=>drugs.find(d=>d.id===id)?.name||"-";
+  const lowStock=drugs.filter(d=>d.stock<=d.reorderLevel);
+  const pendingDrugIds=new Set(orders.filter(o=>o.status==="Pending").map(o=>o.drugId));
 
-function Badge({ color, text }) {
-  const s = { green:["#e6f4ea","#2d6a4f"], red:["#fdecea","#a61c00"], amber:["#fff3e0","#7c4d00"], blue:["#e3f2fd","#0d47a1"], gray:["#f1f0eb","#5a5955"] }[color]||["#f1f0eb","#5a5955"];
-  return <span style={{ background:s[0], color:s[1], padding:"2px 9px", borderRadius:12, fontSize:12, fontWeight:500, whiteSpace:"nowrap" }}>{text}</span>;
-}
-function Card({ children, style }) {
-  return <div style={{ background:"var(--color-background-primary)", border:"0.5px solid var(--color-border-tertiary)", borderRadius:12, padding:"1rem 1.25rem", ...style }}>{children}</div>;
-}
-function Metric({ label, value, sub, color }) {
-  const c = { green:"#2d6a4f", red:"#a61c00", amber:"#7c4d00" }[color]||"var(--color-text-primary)";
+  const bestPrice=useCallback(drugId=>{
+    const ps=prices.filter(p=>p.drugId===drugId);
+    return ps.length?ps.reduce((a,b)=>a.price<b.price?a:b):null;
+  },[prices]);
+
+  const margin=useCallback(drug=>{
+    const bp=bestPrice(drug.id);
+    return bp?((drug.sellingPrice-bp.price)/drug.sellingPrice*100).toFixed(1):null;
+  },[bestPrice]);
+
+  const addDrug=d=>setDrugs(p=>[...p,{...d,id:Date.now()}]);
+  const addVendor=v=>setVendors(p=>[...p,{...v,id:Date.now()}]);
+  const addPrice=p=>setPrices(pr=>[...pr,p]);
+  const addOrder=o=>setOrders(p=>[...p,{...o,id:Date.now()}]);
+  const updateOrder=(id,status)=>setOrders(p=>p.map(o=>o.id===id?{...o,status}:o));
+  const receiveOrder=o=>{
+    setDrugs(p=>p.map(d=>d.id===o.drugId?{...d,stock:d.stock+Number(o.qty)}:d));
+    updateOrder(o.id,"Received");
+  };
+
+  const shared={drugs,vendors,prices,orders,bestPrice,margin,pendingDrugIds,addDrug,addVendor,addPrice,addOrder,updateOrder,receiveOrder,vendorName,drugName,lowStock};
+
   return (
-    <div style={{ background:"var(--color-background-secondary)", borderRadius:8, padding:"0.9rem" }}>
-      <div style={{ fontSize:12, color:"var(--color-text-secondary)", marginBottom:4 }}>{label}</div>
-      <div style={{ fontSize:20, fontWeight:500, color:c }}>{value}</div>
-      {sub && <div style={{ fontSize:11, color:"var(--color-text-secondary)", marginTop:2 }}>{sub}</div>}
-    </div>
-  );
-}
-
-export default function App() {
-  const [tab, setTab] = useState("Dashboard");
-  const noLpo = initItems.filter(i => i.status === "no_lpo");
-  const flags = initItems.filter(i => !["matched","returned"].includes(i.status));
-  return (
-    <div style={{ fontFamily:"var(--font-sans)", paddingBottom:"2rem" }}>
-      <div style={{ background:"var(--color-background-primary)", borderBottom:"0.5px solid var(--color-border-tertiary)", padding:"1rem 1.5rem", display:"flex", alignItems:"center", gap:12 }}>
-        <div style={{ width:36, height:36, borderRadius:8, background:"#1d6fa4", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>💊</div>
+    <div style={{minHeight:"100vh"}}>
+      {/* Header */}
+      <div style={{background:"#fff",borderBottom:"1px solid #e5e7eb",padding:"12px 20px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:10}}>
+        <div style={{width:36,height:36,borderRadius:8,background:"#1d9e75",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💊</div>
         <div>
-          <div style={{ fontWeight:600, fontSize:16 }}>PharManager</div>
-          <div style={{ fontSize:12, color:"var(--color-text-secondary)" }}>Goods Received Register · 4–10 June 2026</div>
+          <div style={{fontWeight:600,fontSize:16}}>PharmManager</div>
+          <div style={{fontSize:12,color:"#6b7280"}}>Inventory &amp; Procurement</div>
         </div>
-        {noLpo.length > 0 && <div style={{ marginLeft:"auto" }}><Badge color="red" text={`⚠ ${noLpo.length} items need auth`}/></div>}
+        {lowStock.length>0&&<div style={{marginLeft:"auto"}}><Badge color="red" text={`⚠ ${lowStock.length} low stock`}/></div>}
       </div>
-      <div style={{ display:"flex", gap:2, padding:"0.6rem 1.5rem 0", overflowX:"auto", borderBottom:"0.5px solid var(--color-border-tertiary)", background:"var(--color-background-primary)" }}>
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{ padding:"6px 13px", borderRadius:"6px 6px 0 0", border:"none", cursor:"pointer", fontSize:13, background:tab===t?"var(--color-background-secondary)":"transparent", color:tab===t?"var(--color-text-primary)":"var(--color-text-secondary)", fontWeight:tab===t?500:400, borderBottom:tab===t?"2px solid #1d6fa4":"none", whiteSpace:"nowrap" }}>{t}</button>
+
+      {/* Tabs */}
+      <div style={{background:"#fff",borderBottom:"1px solid #e5e7eb",display:"flex",gap:4,padding:"0 16px",overflowX:"auto"}}>
+        {TABS.map(t=>(
+          <button key={t} onClick={()=>setTab(t)} style={{padding:"10px 14px",border:"none",background:"none",fontSize:14,color:tab===t?"#111":"#6b7280",whiteSpace:"nowrap"}} className={tab===t?"tab-active":""}>{t}</button>
         ))}
       </div>
-      <div style={{ padding:"1.25rem" }}>
-        {tab === "Dashboard"       && <Dashboard items={initItems} vendors={initVendors} invoices={INVOICES} />}
-        {tab === "Goods Received"  && <GoodsReceived items={initItems} vendors={initVendors} />}
-        {tab === "Inventory"       && <Inventory items={initItems} />}
-        {tab === "Orders"          && <OrdersTab invoices={INVOICES} vendors={initVendors} items={initItems} />}
-        {tab === "Vendors"         && <VendorTab vendors={initVendors} items={initItems} invoices={INVOICES} />}
-        {tab === "Flags & Actions" && <FlagsTab items={initItems} vendors={initVendors} />}
+
+      <div style={{padding:"20px 16px",maxWidth:960,margin:"0 auto"}}>
+        {tab==="Dashboard"&&<Dashboard {...shared}/>}
+        {tab==="Inventory"&&<Inventory {...shared}/>}
+        {tab==="Orders"&&<Orders {...shared}/>}
+        {tab==="Vendors"&&<VendorTab {...shared}/>}
+        {tab==="Price Compare"&&<PriceCompare {...shared}/>}
+        {tab==="Profitability"&&<Profitability {...shared}/>}
       </div>
     </div>
   );
 }
 
-function Dashboard({ items, vendors, invoices }) {
-  const total = 375854;
-  const bilova = items.filter(i=>i.vendorId===1).reduce((s,i)=>s+Math.abs(i.total),0);
-  const east = items.filter(i=>i.vendorId===2).reduce((s,i)=>s+Math.abs(i.total),0);
-  const noLpo = items.filter(i=>i.status==="no_lpo");
-  const noLpoValue = noLpo.reduce((s,i)=>s+i.total,0);
-  const partial = items.filter(i=>i.status==="partial");
-  const flags = items.filter(i=>!["matched","returned"].includes(i.status));
-  const creditDue = Math.abs(items.find(i=>i.status==="returned")?.total||0);
-  return (
+/* ───── Dashboard ───── */
+function Dashboard({drugs,orders,lowStock,bestPrice,margin,vendors}){
+  const lossItems=drugs.filter(d=>{const m=margin(d);return m!==null&&parseFloat(m)<0;});
+  const ms=drugs.map(d=>margin(d)).filter(Boolean).map(parseFloat);
+  const avg=ms.length?(ms.reduce((a,b)=>a+b,0)/ms.length).toFixed(1):"—";
+  const pending=orders.filter(o=>o.status==="Pending").length;
+  return(
     <div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:10, marginBottom:16 }}>
-        <Metric label="Total Invoiced" value={`KES ${total.toLocaleString()}`} />
-        <Metric label="Bilova Chemists" value={`KES ${bilova.toLocaleString()}`} sub="2 suppliers" />
-        <Metric label="Eastleigh Pharma" value={`KES ${east.toLocaleString()}`} />
-        <Metric label="No-LPO Value" value={`KES ${noLpoValue.toLocaleString()}`} color="red" sub={`${noLpo.length} items`} />
-        <Metric label="Partial Deliveries" value={partial.length} color="amber" sub="follow-up needed" />
-        <Metric label="Credit Note Due" value={`KES ${creditDue.toLocaleString()}`} color="amber" sub="Amtel 45mg return" />
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:20}}>
+        <div className="metric"><div className="metric-label">Total Drugs</div><div className="metric-value">{drugs.length}</div></div>
+        <div className="metric"><div className="metric-label">Low Stock</div><div className="metric-value" style={{color:lowStock.length>0?"#a61c00":"#2d6a4f"}}>{lowStock.length}</div><div className="metric-sub">need reorder</div></div>
+        <div className="metric"><div className="metric-label">Pending Orders</div><div className="metric-value" style={{color:"#7c4d00"}}>{pending}</div></div>
+        <div className="metric"><div className="metric-label">Avg Margin</div><div className="metric-value" style={{color:parseFloat(avg)>20?"#2d6a4f":parseFloat(avg)>0?"#7c4d00":"#a61c00"}}>{avg}%</div></div>
+        <div className="metric"><div className="metric-label">Loss Items</div><div className="metric-value" style={{color:lossItems.length>0?"#a61c00":"#2d6a4f"}}>{lossItems.length}</div><div className="metric-sub">check pricing</div></div>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
-        <Card>
-          <div style={{ fontWeight:500, marginBottom:10 }}>Invoices by Supplier</div>
-          {invoices.map(inv => {
-            const vname = vendors.find(v=>v.id===inv.vendorId)?.name.split(" ")[0];
-            return (
-              <div key={inv.inv} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0", borderBottom:"0.5px solid var(--color-border-tertiary)", fontSize:13 }}>
-                <span style={{ color:"var(--color-text-secondary)", fontFamily:"monospace", fontSize:12 }}>{inv.inv}</span>
-                <span style={{ color:"var(--color-text-secondary)", fontSize:12 }}>{vname} · {inv.date.slice(5)}</span>
-                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                  <span style={{ fontWeight:500 }}>KES {inv.subtotal.toLocaleString()}</span>
-                  {inv.flag && <Badge color="red" text="No LPO" />}
-                </div>
-              </div>
-            );
-          })}
-        </Card>
-        <Card>
-          <div style={{ fontWeight:500, marginBottom:10 }}>Items Requiring Action</div>
-          {[
-            { label:"No LPO — Auth needed", count:noLpo.length, color:"red" },
-            { label:"Partial deliveries", count:partial.length, color:"amber" },
-            { label:"Excess vs LPO", count:items.filter(i=>i.status==="excess").length, color:"amber" },
-            { label:"Discrepancies", count:items.filter(i=>i.status==="discrepancy").length, color:"amber" },
-            { label:"Late deliveries", count:items.filter(i=>i.status==="late").length, color:"blue" },
-            { label:"Returns (credit due)", count:1, color:"gray" },
-          ].map(r => (
-            <div key={r.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0", borderBottom:"0.5px solid var(--color-border-tertiary)", fontSize:13 }}>
-              <span>{r.label}</span>
-              <Badge color={r.color} text={r.count} />
-            </div>
-          ))}
-        </Card>
+
+      {lowStock.length>0&&<div className="card" style={{borderColor:"#fca5a5"}}>
+        <div style={{fontWeight:600,color:"#a61c00",marginBottom:10}}>⚠ Low Stock Alert</div>
+        {lowStock.map(d=>(
+          <div key={d.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #f3f4f6",fontSize:14}}>
+            <span>{d.name}</span><span style={{color:"#a61c00"}}>{d.stock}/{d.reorderLevel} {d.unit}</span>
+          </div>
+        ))}
+      </div>}
+
+      {lossItems.length>0&&<div className="card" style={{borderColor:"#fca5a5"}}>
+        <div style={{fontWeight:600,color:"#a61c00",marginBottom:10}}>💸 Selling at a Loss</div>
+        {lossItems.map(d=>{const bp=bestPrice(d.id);return(
+          <div key={d.id} style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:6,padding:"6px 0",borderBottom:"1px solid #f3f4f6",fontSize:14}}>
+            <span>{d.name}</span>
+            <span>Buy: KES {bp?.price} → Sell: KES {d.sellingPrice} &nbsp;<Badge color="red" text={margin(d)+"%"}/></span>
+          </div>
+        );})}
+      </div>}
+
+      <div className="card">
+        <div style={{fontWeight:600,marginBottom:10}}>Recent Orders</div>
+        {orders.length===0&&<div style={{color:"#6b7280",fontSize:14}}>No orders yet.</div>}
+        {orders.slice().reverse().slice(0,5).map(o=>(
+          <div key={o.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #f3f4f6",fontSize:14}}>
+            <span>{drugs.find(d=>d.id===o.drugId)?.name}</span>
+            <span style={{color:"#6b7280"}}>Qty: {o.qty}</span>
+            <Badge color={o.status==="Pending"?"amber":o.status==="Received"?"green":"gray"} text={o.status}/>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-function GoodsReceived({ items, vendors }) {
-  const [selVendor, setSelVendor] = useState("All");
-  const [selInv, setSelInv] = useState("All");
-  const [selStatus, setSelStatus] = useState("All");
-  const [search, setSearch] = useState("");
-  const invs = ["All", ...new Set(items.map(i=>i.inv))];
-  let filtered = items
-    .filter(i => selVendor==="All" || i.vendorId===Number(selVendor))
-    .filter(i => selInv==="All" || i.inv===selInv)
-    .filter(i => selStatus==="All" || i.status===selStatus)
-    .filter(i => i.name.toLowerCase().includes(search.toLowerCase()));
-  const grandTotal = filtered.reduce((s,i)=>s+i.total,0);
-  return (
+/* ───── Inventory ───── */
+function Inventory({drugs,pendingDrugIds,margin,addDrug}){
+  const [search,setSearch]=useState("");
+  const [cat,setCat]=useState("All");
+  const [show,setShow]=useState(false);
+  const empty={name:"",category:"Other",stock:"",reorderLevel:"",unit:"tabs",sellingPrice:"",expiryDate:""};
+  const [f,setF]=useState(empty);
+  const filtered=drugs.filter(d=>(cat==="All"||d.category===cat)&&d.name.toLowerCase().includes(search.toLowerCase()));
+
+  function save(){
+    if(!f.name||!f.stock||!f.reorderLevel||!f.sellingPrice)return alert("Fill all required fields.");
+    addDrug({...f,stock:Number(f.stock),reorderLevel:Number(f.reorderLevel),sellingPrice:Number(f.sellingPrice)});
+    setF(empty);setShow(false);
+  }
+  return(
     <div>
-      <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:12 }}>
-        <input placeholder="Search items…" value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1, minWidth:120 }} />
-        <select value={selVendor} onChange={e=>setSelVendor(e.target.value)}>
-          <option value="All">All Suppliers</option>
-          {vendors.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}
-        </select>
-        <select value={selInv} onChange={e=>setSelInv(e.target.value)}>
-          {invs.map(i=><option key={i}>{i}</option>)}
-        </select>
-        <select value={selStatus} onChange={e=>setSelStatus(e.target.value)}>
-          <option value="All">All Statuses</option>
-          {Object.entries(STATUS_META).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
-        </select>
+      <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+        <input placeholder="Search drugs…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:140}}/>
+        <select value={cat} onChange={e=>setCat(e.target.value)} style={{width:"auto"}}>{CATS.map(c=><option key={c}>{c}</option>)}</select>
+        <button className="btn-primary" onClick={()=>setShow(!show)}>+ Add Drug</button>
       </div>
-      <div style={{ overflowX:"auto" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
-          <thead>
-            <tr style={{ background:"var(--color-background-secondary)" }}>
-              {["Date","Invoice","Supplier","Item","Pack","Qty","Unit Price","Disc%","Total (KES)","Status","Notes"].map(h=>(
-                <th key={h} style={{ padding:"7px 9px", fontWeight:500, color:"var(--color-text-secondary)", fontSize:11, textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
+
+      {show&&<div className="card">
+        <div style={{fontWeight:600,marginBottom:12}}>Add New Drug</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}>
+          <Field label="Drug Name *"><input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))}/></Field>
+          <Field label="Category"><select value={f.category} onChange={e=>setF(p=>({...p,category:e.target.value}))}>{CATS.filter(c=>c!=="All").map(c=><option key={c}>{c}</option>)}</select></Field>
+          <Field label="Current Stock *"><input type="number" value={f.stock} onChange={e=>setF(p=>({...p,stock:e.target.value}))}/></Field>
+          <Field label="Reorder Level *"><input type="number" value={f.reorderLevel} onChange={e=>setF(p=>({...p,reorderLevel:e.target.value}))}/></Field>
+          <Field label="Unit"><select value={f.unit} onChange={e=>setF(p=>({...p,unit:e.target.value}))}>{UNITS.map(u=><option key={u}>{u}</option>)}</select></Field>
+          <Field label="Selling Price KES *"><input type="number" value={f.sellingPrice} onChange={e=>setF(p=>({...p,sellingPrice:e.target.value}))}/></Field>
+          <Field label="Expiry Date"><input type="date" value={f.expiryDate} onChange={e=>setF(p=>({...p,expiryDate:e.target.value}))}/></Field>
+        </div>
+        <div style={{display:"flex",gap:8,marginTop:4}}>
+          <button className="btn-primary" onClick={save}>Save</button>
+          <button onClick={()=>setShow(false)}>Cancel</button>
+        </div>
+      </div>}
+
+      <div style={{overflowX:"auto"}}>
+        <table>
+          <thead><tr>{["Drug Name","Category","Stock","Reorder At","Sell Price","Margin","Expiry","Status"].map(h=><th key={h} style={{color:"#6b7280",fontSize:12,whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
-            {filtered.map(item => {
-              const sm = STATUS_META[item.status];
-              const rowBg = item.status==="no_lpo" ? "#fffdf0" : item.status==="returned" ? "#f9f0f0" : "transparent";
-              return (
-                <tr key={item.id} style={{ borderBottom:"0.5px solid var(--color-border-tertiary)", background:rowBg }}>
-                  <td style={{ padding:"6px 9px", color:"var(--color-text-secondary)", whiteSpace:"nowrap" }}>{item.date.slice(5)}</td>
-                  <td style={{ padding:"6px 9px", fontFamily:"monospace", fontSize:11, color:"var(--color-text-secondary)" }}>{item.inv}</td>
-                  <td style={{ padding:"6px 9px", fontSize:11, color:"var(--color-text-secondary)", whiteSpace:"nowrap" }}>{vendors.find(v=>v.id===item.vendorId)?.name.split(" ")[0]}</td>
-                  <td style={{ padding:"6px 9px", fontWeight:500 }}>{item.name}</td>
-                  <td style={{ padding:"6px 9px", color:"var(--color-text-secondary)" }}>{item.pack}</td>
-                  <td style={{ padding:"6px 9px", textAlign:"right" }}>{item.qty}</td>
-                  <td style={{ padding:"6px 9px", textAlign:"right" }}>{item.unitPrice ? item.unitPrice.toFixed(2) : "—"}</td>
-                  <td style={{ padding:"6px 9px", textAlign:"right" }}>{item.disc != null && item.disc > 0 ? item.disc+"%" : "—"}</td>
-                  <td style={{ padding:"6px 9px", textAlign:"right", fontWeight:500, color:item.total<0?"#a61c00":"inherit" }}>{item.total.toLocaleString()}</td>
-                  <td style={{ padding:"6px 9px" }}><Badge color={sm.color} text={sm.label} /></td>
-                  <td style={{ padding:"6px 9px", fontSize:11, color:"var(--color-text-secondary)", maxWidth:180 }}>{item.notes}</td>
+            {filtered.map(d=>{
+              const m=margin(d);const isLow=d.stock<=d.reorderLevel;const isLoss=m!==null&&parseFloat(m)<0;
+              return(
+                <tr key={d.id}>
+                  <td style={{fontWeight:500}}>{d.name}</td>
+                  <td style={{color:"#6b7280"}}>{d.category}</td>
+                  <td style={{color:isLow?"#a61c00":"inherit"}}>{d.stock} {d.unit}</td>
+                  <td style={{color:"#6b7280"}}>{d.reorderLevel}</td>
+                  <td>KES {d.sellingPrice}</td>
+                  <td>{m!==null?<Badge color={isLoss?"red":parseFloat(m)>30?"green":"amber"} text={m+"%"}/>:<Badge color="gray" text="No price"/>}</td>
+                  <td style={{color:"#6b7280",fontSize:12}}>{d.expiryDate||"—"}</td>
+                  <td>{pendingDrugIds.has(d.id)?<Badge color="amber" text="On Order"/>:isLow?<Badge color="red" text="Low Stock"/>:<Badge color="green" text="OK"/>}</td>
                 </tr>
               );
             })}
           </tbody>
-          <tfoot>
-            <tr style={{ background:"var(--color-background-secondary)", fontWeight:600 }}>
-              <td colSpan={8} style={{ padding:"7px 9px", textAlign:"right" }}>Total ({filtered.length} items):</td>
-              <td style={{ padding:"7px 9px", textAlign:"right" }}>KES {grandTotal.toLocaleString()}</td>
-              <td colSpan={2} />
-            </tr>
-          </tfoot>
         </table>
+        {filtered.length===0&&<div style={{color:"#6b7280",padding:"1rem",textAlign:"center"}}>No drugs found.</div>}
       </div>
     </div>
   );
 }
 
-function Inventory({ items }) {
-  const [search, setSearch] = useState("");
-  // Aggregate by item name (simplistic — real system would use drug codes)
-  const agg = {};
-  items.filter(i=>i.status!=="returned").forEach(i => {
-    const k = i.name.replace(/ \(late\)| \(RETURNED\)/g,"").trim();
-    if (!agg[k]) agg[k] = { name:k, qty:0, totalCost:0, pack:i.pack };
-    agg[k].qty += i.qty;
-    agg[k].totalCost += Math.abs(i.total);
-  });
-  const rows = Object.values(agg)
-    .filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
-    .sort((a,b) => b.totalCost - a.totalCost);
-  return (
-    <div>
-      <div style={{ marginBottom:12 }}>
-        <input placeholder="Search drug/item…" value={search} onChange={e=>setSearch(e.target.value)} style={{ width:"100%", boxSizing:"border-box" }} />
-      </div>
-      <div style={{ overflowX:"auto" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
-          <thead>
-            <tr style={{ background:"var(--color-background-secondary)" }}>
-              {["Item Name","Pack","Units Received","Total Cost (KES)","Avg Unit Cost"].map(h=>(
-                <th key={h} style={{ padding:"7px 9px", fontWeight:500, color:"var(--color-text-secondary)", fontSize:11, textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r,i) => (
-              <tr key={i} style={{ borderBottom:"0.5px solid var(--color-border-tertiary)" }}>
-                <td style={{ padding:"6px 9px", fontWeight:500 }}>{r.name}</td>
-                <td style={{ padding:"6px 9px", color:"var(--color-text-secondary)" }}>{r.pack}</td>
-                <td style={{ padding:"6px 9px", textAlign:"right" }}>{r.qty}</td>
-                <td style={{ padding:"6px 9px", textAlign:"right", fontWeight:500 }}>KES {r.totalCost.toLocaleString()}</td>
-                <td style={{ padding:"6px 9px", textAlign:"right", color:"var(--color-text-secondary)" }}>KES {(r.totalCost/r.qty).toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
+/* ───── Orders ───── */
+function Orders({drugs,vendors,prices,orders,pendingDrugIds,addOrder,updateOrder,receiveOrder,vendorName,drugName}){
+  const [show,setShow]=useState(false);
+  const empty={drugId:"",vendorId:"",qty:"",unitPrice:"",notes:""};
+  const [f,setF]=useState(empty);
+  const [warn,setWarn]=useState("");
 
-function OrdersTab({ invoices, vendors, items }) {
-  return (
+  function onDrug(drugId){
+    setF(p=>({...p,drugId,vendorId:"",unitPrice:""}));
+    setWarn(pendingDrugIds.has(Number(drugId))?"⚠ This drug already has a pending order. Confirm before ordering again.":"");
+  }
+  function onVendor(vendorId){
+    const drug=drugs.find(d=>d.id===Number(f.drugId));
+    const pe=prices.find(p=>p.drugId===Number(f.drugId)&&p.vendorId===Number(vendorId));
+    setF(p=>({...p,vendorId,unitPrice:pe?pe.price:""}));
+    if(drug&&pe&&pe.price>=drug.sellingPrice)setWarn(`💸 Loss alert: vendor price KES ${pe.price} ≥ selling price KES ${drug.sellingPrice}`);
+    else if(!pendingDrugIds.has(Number(f.drugId)))setWarn("");
+  }
+  function place(){
+    if(!f.drugId||!f.vendorId||!f.qty||!f.unitPrice)return alert("Fill all fields.");
+    addOrder({...f,drugId:Number(f.drugId),vendorId:Number(f.vendorId),qty:Number(f.qty),unitPrice:Number(f.unitPrice),status:"Pending",date:new Date().toISOString().slice(0,10)});
+    setF(empty);setWarn("");setShow(false);
+  }
+  return(
     <div>
-      {invoices.map(inv => {
-        const vname = vendors.find(v=>v.id===inv.vendorId)?.name;
-        const invItems = items.filter(i=>i.inv===inv.inv);
-        const hasFlag = inv.flag==="no_lpo";
-        return (
-          <Card key={inv.inv} style={{ marginBottom:12, border:hasFlag?"1.5px solid #e24b4a":undefined }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:8, marginBottom:10 }}>
-              <div>
-                <div style={{ fontWeight:600, fontFamily:"monospace" }}>{inv.inv}</div>
-                <div style={{ fontSize:13, color:"var(--color-text-secondary)" }}>{vname} · {inv.date}</div>
-              </div>
-              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                <span style={{ fontWeight:500 }}>KES {inv.subtotal.toLocaleString()}</span>
-                {hasFlag ? <Badge color="red" text="⚠ No Matching LPO" /> : <Badge color="green" text="LPO Matched" />}
-              </div>
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+        <button className="btn-primary" onClick={()=>setShow(!show)}>+ New Order</button>
+      </div>
+
+      {show&&<div className="card">
+        <div style={{fontWeight:600,marginBottom:12}}>Create Purchase Order</div>
+        {warn&&<div className="warn-box">{warn}</div>}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}>
+          <Field label="Drug"><select value={f.drugId} onChange={e=>onDrug(e.target.value)}><option value="">Select drug…</option>{drugs.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></Field>
+          <Field label="Vendor"><select value={f.vendorId} onChange={e=>onVendor(e.target.value)} disabled={!f.drugId}><option value="">Select vendor…</option>{vendors.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</select></Field>
+          <Field label="Quantity"><input type="number" value={f.qty} onChange={e=>setF(p=>({...p,qty:e.target.value}))}/></Field>
+          <Field label="Unit Price (KES)"><input type="number" step="0.01" value={f.unitPrice} onChange={e=>setF(p=>({...p,unitPrice:e.target.value}))}/></Field>
+        </div>
+        <Field label="Notes / Negotiation Terms"><input value={f.notes} placeholder="e.g. negotiated 10% discount" onChange={e=>setF(p=>({...p,notes:e.target.value}))}/></Field>
+        {f.qty&&f.unitPrice&&<div style={{fontSize:13,color:"#6b7280",marginBottom:10}}>Total: <strong>KES {(f.qty*f.unitPrice).toFixed(0)}</strong></div>}
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn-primary" onClick={place}>Place Order</button>
+          <button onClick={()=>setShow(false)}>Cancel</button>
+        </div>
+      </div>}
+
+      {orders.length===0&&<div style={{color:"#6b7280",textAlign:"center",padding:"2rem"}}>No orders yet.</div>}
+      {orders.slice().reverse().map(o=>(
+        <div key={o.id} className="card">
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+            <div>
+              <div style={{fontWeight:600,fontSize:15}}>{drugName(o.drugId)}</div>
+              <div style={{fontSize:13,color:"#6b7280"}}>Vendor: {vendorName(o.vendorId)} · {o.date}</div>
+              <div style={{fontSize:13,marginTop:2}}>Qty: {o.qty} · KES {o.unitPrice}/unit · <strong>Total: KES {(o.qty*o.unitPrice).toFixed(0)}</strong></div>
+              {o.notes&&<div style={{fontSize:12,color:"#6b7280",marginTop:2}}>📝 {o.notes}</div>}
             </div>
-            <div style={{ fontSize:12, color:"var(--color-text-secondary)" }}>
-              {invItems.map(i => {
-                const sm = STATUS_META[i.status];
-                return (
-                  <div key={i.id} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:"0.5px solid var(--color-border-tertiary)", gap:8 }}>
-                    <span>{i.name}</span>
-                    <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                      <span>Qty {i.qty} · KES {Math.abs(i.total).toLocaleString()}</span>
-                      <Badge color={sm.color} text={sm.label} />
-                    </div>
-                  </div>
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <Badge color={o.status==="Pending"?"amber":o.status==="Received"?"green":"gray"} text={o.status}/>
+              {o.status==="Pending"&&<>
+                <button className="btn-success" onClick={()=>receiveOrder(o)}>Mark Received</button>
+                <button className="btn-danger" onClick={()=>updateOrder(o.id,"Cancelled")}>Cancel</button>
+              </>}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ───── Vendors ───── */
+function VendorTab({vendors,addVendor}){
+  const [show,setShow]=useState(false);
+  const empty={name:"",contact:"",paymentTerms:"",leadDays:""};
+  const [f,setF]=useState(empty);
+  function save(){if(!f.name)return;addVendor({...f,leadDays:Number(f.leadDays)||0});setF(empty);setShow(false);}
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+        <button className="btn-primary" onClick={()=>setShow(!show)}>+ Add Vendor</button>
+      </div>
+      {show&&<div className="card">
+        <div style={{fontWeight:600,marginBottom:12}}>Add Vendor</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}>
+          <Field label="Vendor Name *"><input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))}/></Field>
+          <Field label="Contact"><input value={f.contact} onChange={e=>setF(p=>({...p,contact:e.target.value}))}/></Field>
+          <Field label="Payment Terms"><input value={f.paymentTerms} placeholder="e.g. 30 days, Cash" onChange={e=>setF(p=>({...p,paymentTerms:e.target.value}))}/></Field>
+          <Field label="Lead Time (days)"><input type="number" value={f.leadDays} onChange={e=>setF(p=>({...p,leadDays:e.target.value}))}/></Field>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn-primary" onClick={save}>Save</button>
+          <button onClick={()=>setShow(false)}>Cancel</button>
+        </div>
+      </div>}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12}}>
+        {vendors.map(v=>(
+          <div key={v.id} className="card" style={{margin:0}}>
+            <div style={{fontWeight:600,fontSize:15,marginBottom:6}}>{v.name}</div>
+            <div style={{fontSize:13,color:"#6b7280"}}>📞 {v.contact||"—"}</div>
+            <div style={{fontSize:13,color:"#6b7280"}}>💳 {v.paymentTerms||"—"}</div>
+            <div style={{fontSize:13,color:"#6b7280"}}>🚚 {v.leadDays} day lead time</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ───── Price Compare ───── */
+function PriceCompare({drugs,vendors,prices,addPrice}){
+  const [selDrug,setSelDrug]=useState("");
+  const [show,setShow]=useState(false);
+  const [f,setF]=useState({vendorId:"",price:"",date:new Date().toISOString().slice(0,10)});
+  const drug=drugs.find(d=>d.id===Number(selDrug));
+  const dp=prices.filter(p=>p.drugId===Number(selDrug));
+  const minP=dp.length?Math.min(...dp.map(p=>p.price)):null;
+
+  function save(){
+    if(!f.vendorId||!f.price)return;
+    addPrice({drugId:Number(selDrug),vendorId:Number(f.vendorId),price:Number(f.price),date:f.date});
+    setF({vendorId:"",price:"",date:new Date().toISOString().slice(0,10)});setShow(false);
+  }
+  return(
+    <div>
+      <div className="card">
+        <div style={{fontWeight:600,marginBottom:10}}>Compare Vendor Prices</div>
+        <Field label="Select Drug">
+          <select value={selDrug} onChange={e=>setSelDrug(e.target.value)}>
+            <option value="">Choose a drug…</option>
+            {drugs.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+        </Field>
+      </div>
+
+      {selDrug&&drug&&<>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+          <div><span style={{fontWeight:600}}>{drug.name}</span><span style={{color:"#6b7280",fontSize:13,marginLeft:8}}>Selling at KES {drug.sellingPrice}</span></div>
+          <button className="btn-primary" style={{fontSize:13,padding:"5px 12px"}} onClick={()=>setShow(!show)}>+ Add Price Quote</button>
+        </div>
+
+        {show&&<div className="card">
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}>
+            <Field label="Vendor"><select value={f.vendorId} onChange={e=>setF(p=>({...p,vendorId:e.target.value}))}><option value="">Select…</option>{vendors.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</select></Field>
+            <Field label="Price (KES)"><input type="number" step="0.01" value={f.price} onChange={e=>setF(p=>({...p,price:e.target.value}))}/></Field>
+            <Field label="Date"><input type="date" value={f.date} onChange={e=>setF(p=>({...p,date:e.target.value}))}/></Field>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button className="btn-primary" onClick={save}>Save Quote</button>
+            <button onClick={()=>setShow(false)}>Cancel</button>
+          </div>
+        </div>}
+
+        {dp.length===0&&<div style={{color:"#6b7280",fontSize:14}}>No price quotes yet.</div>}
+        {dp.map((p,i)=>{
+          const v=vendors.find(v=>v.id===p.vendorId);
+          const isBest=p.price===minP;
+          const isLoss=p.price>=drug.sellingPrice;
+          const m=((drug.sellingPrice-p.price)/drug.sellingPrice*100).toFixed(1);
+          const barW=minP?Math.min(100,(minP/p.price)*100):50;
+          return(
+            <div key={i} className="card" style={{border:isBest?"1.5px solid #1d9e75":undefined}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
+                <div>
+                  <span style={{fontWeight:600}}>{v?.name||"Unknown"}</span>
+                  {isBest&&<span style={{marginLeft:8,background:"#e6f4ea",color:"#2d6a4f",padding:"2px 8px",borderRadius:10,fontSize:12}}>Best Price</span>}
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <span style={{fontWeight:600,fontSize:16}}>KES {p.price}</span>
+                  <Badge color={isLoss?"red":parseFloat(m)>30?"green":"amber"} text={m+(isLoss?"% (LOSS)":"% margin")}/>
+                </div>
+              </div>
+              <div style={{background:"#f3f4f6",borderRadius:4,height:6}}>
+                <div style={{width:barW+"%",background:isBest?"#1d9e75":isLoss?"#e24b4a":"#ef9f27",height:6,borderRadius:4}}/>
+              </div>
+              <div style={{fontSize:12,color:"#6b7280",marginTop:4}}>Quoted: {p.date} · Lead: {v?.leadDays||"?"} days · {v?.paymentTerms||"?"}</div>
+            </div>
+          );
+        })}
+      </>}
+    </div>
+  );
+}
+
+/* ───── Profitability ───── */
+function Profitability({drugs,prices,vendors,bestPrice,margin}){
+  const sorted=[...drugs].map(d=>{
+    const bp=bestPrice(d.id);
+    const m=margin(d);
+    return{...d,bestBuyPrice:bp?.price,bestVendor:bp?vendors.find(v=>v.id===bp.vendorId)?.name:null,margin:m};
+  }).sort((a,b)=>(parseFloat(b.margin)||(-999))-(parseFloat(a.margin)||(-999)));
+
+  const profitable=sorted.filter(d=>d.margin!==null&&parseFloat(d.margin)>0);
+  const loss=sorted.filter(d=>d.margin!==null&&parseFloat(d.margin)<=0);
+  const noPricing=sorted.filter(d=>d.margin===null);
+
+  return(
+    <div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:20}}>
+        <div className="metric"><div className="metric-label">Profitable</div><div className="metric-value" style={{color:"#2d6a4f"}}>{profitable.length}</div></div>
+        <div className="metric"><div className="metric-label">Loss-making</div><div className="metric-value" style={{color:loss.length>0?"#a61c00":"#2d6a4f"}}>{loss.length}</div></div>
+        <div className="metric"><div className="metric-label">No Price Data</div><div className="metric-value" style={{color:"#7c4d00"}}>{noPricing.length}</div></div>
+        <div className="metric"><div className="metric-label">Best Margin</div><div className="metric-value" style={{color:"#2d6a4f"}}>{sorted[0]?.margin?sorted[0].margin+"%":"—"}</div><div className="metric-sub">{sorted[0]?.name?.split(" ")[0]}</div></div>
+      </div>
+
+      {loss.length>0&&<div className="card" style={{borderColor:"#f09595",marginBottom:14}}>
+        <div style={{fontWeight:600,color:"#a61c00",marginBottom:10}}>🚨 Action Needed — Fix Pricing</div>
+        {loss.map(d=>(
+          <div key={d.id} style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:6,padding:"8px 0",borderBottom:"1px solid #f3f4f6",fontSize:14}}>
+            <div>
+              <div style={{fontWeight:500}}>{d.name}</div>
+              <div style={{fontSize:12,color:"#6b7280"}}>Best buy: KES {d.bestBuyPrice} from {d.bestVendor}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div>Sell: KES {d.sellingPrice}</div>
+              <Badge color="red" text={d.margin+"% margin"}/>
+              <div style={{fontSize:12,color:"#6b7280",marginTop:2}}>Raise to ≥ KES {d.bestBuyPrice?Math.ceil(d.bestBuyPrice*1.2):"?"} for 20% margin</div>
+            </div>
+          </div>
+        ))}
+      </div>}
+
+      <div className="card">
+        <div style={{fontWeight:600,marginBottom:12}}>All Drugs — Profitability Ranking</div>
+        <div style={{overflowX:"auto"}}>
+          <table>
+            <thead><tr>{["Drug","Sell Price","Best Buy","Best Vendor","Margin","Recommendation"].map(h=><th key={h} style={{color:"#6b7280",fontSize:12,whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+            <tbody>
+              {sorted.map(d=>{
+                const m=d.margin?parseFloat(d.margin):null;
+                return(
+                  <tr key={d.id}>
+                    <td style={{fontWeight:500}}>{d.name}</td>
+                    <td>KES {d.sellingPrice}</td>
+                    <td>{d.bestBuyPrice?"KES "+d.bestBuyPrice:"—"}</td>
+                    <td style={{color:"#6b7280",fontSize:13}}>{d.bestVendor||"—"}</td>
+                    <td>{m!==null?<Badge color={m<0?"red":m<20?"amber":"green"} text={d.margin+"%"}/>:<Badge color="gray" text="No data"/>}</td>
+                    <td style={{fontSize:12,color:"#6b7280"}}>{m!==null&&m<0?`Raise to KES ${Math.ceil(d.bestBuyPrice*1.2)}`:m!==null&&m<20?"Renegotiate buy price":"✓ Healthy margin"}</td>
+                  </tr>
                 );
               })}
-            </div>
-          </Card>
-        );
-      })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
-function VendorTab({ vendors, items, invoices }) {
-  return (
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:14 }}>
-      {vendors.map(v => {
-        const vItems = items.filter(i=>i.vendorId===v.id);
-        const vTotal = vItems.reduce((s,i)=>s+Math.abs(i.total),0);
-        const vInvs = invoices.filter(i=>i.vendorId===v.id);
-        const noLpoInvs = vInvs.filter(i=>i.flag==="no_lpo");
-        return (
-          <Card key={v.id}>
-            <div style={{ fontWeight:600, fontSize:15, marginBottom:8 }}>{v.name}</div>
-            <div style={{ fontSize:13, color:"var(--color-text-secondary)", lineHeight:1.8 }}>
-              <div>📍 {v.contact}</div>
-              <div>🔢 PIN: {v.pin}</div>
-              {v.vat && <div>💼 VAT: {v.vat}</div>}
-              {v.till && <div>🧾 Till: {v.till}</div>}
-              <div>💳 {v.paymentTerms}</div>
-            </div>
-            <div style={{ marginTop:12, paddingTop:10, borderTop:"0.5px solid var(--color-border-tertiary)" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13 }}>
-                <span style={{ color:"var(--color-text-secondary)" }}>Invoices this period</span>
-                <span style={{ fontWeight:500 }}>{vInvs.length}</span>
-              </div>
-              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginTop:4 }}>
-                <span style={{ color:"var(--color-text-secondary)" }}>Total value</span>
-                <span style={{ fontWeight:500 }}>KES {vTotal.toLocaleString()}</span>
-              </div>
-              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginTop:4 }}>
-                <span style={{ color:"var(--color-text-secondary)" }}>No-LPO invoices</span>
-                {noLpoInvs.length > 0 ? <Badge color="red" text={noLpoInvs.length} /> : <Badge color="green" text="None" />}
-              </div>
-            </div>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-
-function FlagsTab({ items, vendors }) {
-  const sections = [
-    { title:"⚠ No Matching LPO — Authorisation Required", filter: i=>i.status==="no_lpo", color:"red", desc:"These items were delivered without a corresponding Local Purchase Order. Payment must not proceed until authorised." },
-    { title:"◑ Partial Deliveries — Follow-up Required", filter: i=>i.status==="partial", color:"amber", desc:"Balance quantities are outstanding. Follow up with supplier for fulfilment." },
-    { title:"↑ Excess Quantities Received", filter: i=>i.status==="excess", color:"amber", desc:"Quantities received exceed LPO quantities. Verify before accepting into stock." },
-    { title:"≠ Discrepancies", filter: i=>i.status==="discrepancy", color:"amber", desc:"Pack size or quantity differences detected versus LPO." },
-    { title:"⏱ Late Deliveries", filter: i=>i.status==="late", color:"blue", desc:"Items delivered after expected date but now matched to LPO." },
-    { title:"↩ Returns — Credit Note Pending", filter: i=>i.status==="returned", color:"gray", desc:"Items returned to supplier. Ensure credit note is received and reconciled." },
-  ];
-  const noLpoTotal = items.filter(i=>i.status==="no_lpo").reduce((s,i)=>s+i.total,0);
-  return (
-    <div>
-      <Card style={{ marginBottom:14, border:"1.5px solid #e24b4a" }}>
-        <div style={{ fontWeight:600, color:"#a61c00", marginBottom:4 }}>Total Unauthorised Value (No-LPO items)</div>
-        <div style={{ fontSize:22, fontWeight:600 }}>KES {noLpoTotal.toLocaleString()}</div>
-        <div style={{ fontSize:13, color:"var(--color-text-secondary)", marginTop:4 }}>Spread across 4 invoices — SNV00270401, SNV90007407, SNV90007427, SNV90007450/55 lines</div>
-      </Card>
-      {sections.map(s => {
-        const rows = items.filter(s.filter);
-        if (!rows.length) return null;
-        return (
-          <Card key={s.title} style={{ marginBottom:12 }}>
-            <div style={{ fontWeight:600, marginBottom:4 }}>{s.title}</div>
-            <div style={{ fontSize:12, color:"var(--color-text-secondary)", marginBottom:10 }}>{s.desc}</div>
-            {rows.map(item => (
-              <div key={item.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", padding:"6px 0", borderBottom:"0.5px solid var(--color-border-tertiary)", fontSize:13, flexWrap:"wrap", gap:6 }}>
-                <div>
-                  <div style={{ fontWeight:500 }}>{item.name}</div>
-                  <div style={{ fontSize:11, color:"var(--color-text-secondary)" }}>{item.inv} · {vendors.find(v=>v.id===item.vendorId)?.name.split(" ")[0]} · {item.date.slice(5)} · Qty {item.qty}</div>
-                  {item.notes && <div style={{ fontSize:11, color:"#7c4d00", marginTop:2 }}>{item.notes}</div>}
-                </div>
-                <div style={{ fontWeight:500 }}>KES {Math.abs(item.total).toLocaleString()}</div>
-              </div>
-            ))}
-            <div style={{ textAlign:"right", fontWeight:600, fontSize:13, marginTop:8 }}>
-              Subtotal: KES {rows.reduce((s,i)=>s+Math.abs(i.total),0).toLocaleString()}
-            </div>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
