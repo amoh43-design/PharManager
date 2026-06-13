@@ -43,7 +43,7 @@
 <div id="root"></div>
 <script type="text/babel">
 const {useState,useCallback}=React;
-const TABS=["Dashboard","Inventory","Orders","Vendors","Price Compare","Profitability"];
+const TABS=["Dashboard","Inventory","Orders","Vendors","Price Compare","Profitability","Import CSV"];
 const CATS=["All","Antibiotic","Analgesic","Antidiabetic","Statin","Antifungal","Antihistamine","Other"];
 const UNITS=["tabs","caps","ml","vials","sachets","bottles","units"];
 
@@ -131,6 +131,7 @@ function App(){
         {tab==="Vendors"&&<VendorTab {...shared}/>}
         {tab==="Price Compare"&&<PriceCompare {...shared}/>}
         {tab==="Profitability"&&<Profitability {...shared}/>}
+        {tab==="Import CSV"&&<CSVImport {...shared}/>}
       </div>
     </div>
   );
@@ -181,6 +182,121 @@ function Dashboard({drugs,orders,lowStock,bestPrice,margin,vendors}){
             <Badge color={o.status==="Pending"?"amber":o.status==="Received"?"green":"gray"} text={o.status}/>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* ───── CSV Import ───── */
+function CSVImport({drugs,vendors,addDrug,addVendor,addPrice,addOrder}){
+  const [tab,setTab]=useState("drugs");
+  const [msg,setMsg]=useState(null);
+
+  function parseCSV(text){
+    const lines=text.trim().split(/\r?\n/).filter(Boolean);
+    const headers=lines[0].split(",").map(h=>h.trim().toLowerCase());
+    return lines.slice(1).map(l=>{
+      const vals=l.split(",").map(v=>v.trim());
+      const obj={};headers.forEach((h,i)=>obj[h]=vals[i]||"");return obj;
+    });
+  }
+
+  function handleFile(e,type){
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const rows=parseCSV(ev.target.result);
+        let added=0,skipped=0;
+        if(type==="drugs"){
+          rows.forEach(r=>{
+            if(!r.name)return skipped++;
+            addDrug({name:r.name,category:r.category||"Other",stock:Number(r.stock)||0,reorderLevel:Number(r.reorderlevel||r.reorder_level)||0,unit:r.unit||"tabs",sellingPrice:Number(r.sellingprice||r.selling_price)||0,expiryDate:r.expirydate||r.expiry_date||""});
+            added++;
+          });
+        }else if(type==="vendors"){
+          rows.forEach(r=>{
+            if(!r.name)return skipped++;
+            addVendor({name:r.name,contact:r.contact||"",paymentTerms:r.paymentterms||r.payment_terms||"",leadDays:Number(r.leaddays||r.lead_days)||0});
+            added++;
+          });
+        }else if(type==="prices"){
+          rows.forEach(r=>{
+            const drug=drugs.find(d=>d.name.toLowerCase()===( r.drugname||r.drug_name||"").toLowerCase());
+            const vendor=vendors.find(v=>v.name.toLowerCase()===(r.vendorname||r.vendor_name||"").toLowerCase());
+            if(!drug||!vendor||!r.price)return skipped++;
+            addPrice({drugId:drug.id,vendorId:vendor.id,price:Number(r.price),date:r.date||new Date().toISOString().slice(0,10)});
+            added++;
+          });
+        }else if(type==="orders"){
+          rows.forEach(r=>{
+            const drug=drugs.find(d=>d.name.toLowerCase()===(r.drugname||r.drug_name||"").toLowerCase());
+            const vendor=vendors.find(v=>v.name.toLowerCase()===(r.vendorname||r.vendor_name||"").toLowerCase());
+            if(!drug||!vendor)return skipped++;
+            addOrder({drugId:drug.id,vendorId:vendor.id,qty:Number(r.qty)||0,unitPrice:Number(r.unitprice||r.unit_price)||0,status:r.status||"Pending",date:r.date||new Date().toISOString().slice(0,10),notes:r.notes||""});
+            added++;
+          });
+        }
+        setMsg({type:"success",text:`✅ Imported ${added} row(s).${skipped>0?` ${skipped} skipped (missing required fields or unmatched drug/vendor names).`:""}`});
+        e.target.value="";
+      }catch(err){setMsg({type:"error",text:"❌ Error reading file. Make sure it's a valid CSV."});}
+    };
+    reader.readAsText(file);
+  }
+
+  const templates={
+    drugs:"name,category,stock,reorderLevel,unit,sellingPrice,expiryDate\nAmoxicillin 250mg,Antibiotic,100,50,caps,18,2027-01-01\nIbuprofen 400mg,Analgesic,80,40,tabs,12,2027-06-01",
+    vendors:"name,contact,paymentTerms,leadDays\nNairobi Pharma,0733-000-111,30 days,2\nMedplus Ltd,0744-222-333,Cash,1",
+    prices:"drugName,vendorName,price,date\nAmoxicillin 500mg,MedSupply Kenya,13,2026-06-01\nParacetamol 500mg,Pharma Direct,4.2,2026-06-01",
+    orders:"drugName,vendorName,qty,unitPrice,status,date,notes\nParacetamol 500mg,Pharma Direct,500,4.2,Pending,2026-06-13,bulk order"
+  };
+
+  function download(type){
+    const blob=new Blob([templates[type]],{type:"text/csv"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`template_${type}.csv`;a.click();
+  }
+
+  const types=["drugs","vendors","prices","orders"];
+
+  return(
+    <div>
+      <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+        {types.map(t=>(
+          <button key={t} onClick={()=>{setTab(t);setMsg(null);}} style={{padding:"7px 16px",borderRadius:8,border:"1px solid #d1d5db",background:tab===t?"#1d9e75":"#fff",color:tab===t?"#fff":"#374151",fontWeight:tab===t?600:400,cursor:"pointer",textTransform:"capitalize"}}>{t}</button>
+        ))}
+      </div>
+
+      {msg&&<div style={{background:msg.type==="success"?"#e6f4ea":"#fdecea",color:msg.type==="success"?"#2d6a4f":"#a61c00",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:14}}>{msg.text}</div>}
+
+      <div className="card">
+        <div style={{fontWeight:600,fontSize:15,marginBottom:4,textTransform:"capitalize"}}>Import {tab}</div>
+        <div style={{fontSize:13,color:"#6b7280",marginBottom:14}}>
+          {tab==="drugs"&&"Columns: name, category, stock, reorderLevel, unit, sellingPrice, expiryDate"}
+          {tab==="vendors"&&"Columns: name, contact, paymentTerms, leadDays"}
+          {tab==="prices"&&"Columns: drugName, vendorName, price, date — drug and vendor names must match existing records exactly."}
+          {tab==="orders"&&"Columns: drugName, vendorName, qty, unitPrice, status, date, notes — drug and vendor names must match existing records."}
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+          <label style={{background:"#1d9e75",color:"#fff",borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:14,fontWeight:500}}>
+            📂 Upload CSV
+            <input type="file" accept=".csv" style={{display:"none"}} onChange={e=>handleFile(e,tab)}/>
+          </label>
+          <button onClick={()=>download(tab)} style={{background:"#f3f4f6",border:"1px solid #d1d5db",borderRadius:8,padding:"8px 14px",fontSize:14,cursor:"pointer"}}>⬇ Download Template</button>
+        </div>
+      </div>
+
+      <div className="card" style={{marginTop:0}}>
+        <div style={{fontWeight:600,marginBottom:8}}>How to use</div>
+        <ol style={{fontSize:13,color:"#6b7280",paddingLeft:18,lineHeight:2}}>
+          <li>Click <strong>Download Template</strong> to get a sample CSV for this data type.</li>
+          <li>Open it in Excel or Google Sheets and fill in your data.</li>
+          <li>Save/export as <strong>.csv</strong> format.</li>
+          <li>Click <strong>Upload CSV</strong> and select your file.</li>
+          <li>For prices &amp; orders, make sure drug and vendor names match exactly what's in your app.</li>
+        </ol>
+        <div style={{marginTop:10,fontSize:13,background:"#fff3e0",color:"#7c4d00",borderRadius:8,padding:"8px 12px"}}>
+          ⚠ Data is held in memory — refresh the page and it resets. To make data permanent, edit the <code>initDrugs</code>, <code>initVendors</code>, <code>initPrices</code>, <code>initOrders</code> arrays in your <code>index.html</code> file.
+        </div>
       </div>
     </div>
   );
