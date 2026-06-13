@@ -1,0 +1,469 @@
+import { useState } from "react";
+
+const TABS = ["Dashboard", "Goods Received", "Inventory", "Orders", "Vendors", "Flags & Actions"];
+
+// ── Real vendors from the document ──────────────────────────────────────────
+const initVendors = [
+  { id: 1, name: "Blv Chemists Ltd", contact: "Westlands, Nairobi", pin: "P051124101B", vat: "0126065H", paymentTerms: "30 days", leadDays: 1 },
+  { id: 2, name: "Eas Pharmaceutical Co. Ltd", contact: "Eastleigh Branch, Nairobi", pin: "P051208794R", till: "4789846", paymentTerms: "30 days", leadDays: 1 },
+];
+
+// ── All items from the GRN ───────────────────────────────────────────────────
+const initItems = [
+  // Bilova SNV00270189 — 04 Jun
+  { id:1,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Montiget Tabs 10mg",           pack:"14s",      qty:9,   unitPrice:800.00,    disc:20, total:5760,  status:"matched",  notes:"" },
+  { id:2,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Cefixime Tabs 400mg",          pack:"10s",      qty:3,   unitPrice:225.19,    disc:10, total:608,   status:"matched",  notes:"" },
+  { id:3,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Zulu MR Tabs",                 pack:"20s",      qty:10,  unitPrice:798.00,    disc:10, total:7182,  status:"matched",  notes:"" },
+  { id:4,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Buscopan Plus Tabs",           pack:"40s",      qty:2,   unitPrice:2508.89,   disc:10, total:4516,  status:"matched",  notes:"" },
+  { id:5,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Ponstan Forte 500mg",          pack:"50s",      qty:4,   unitPrice:1418.95,   disc:5,  total:5392,  status:"matched",  notes:"" },
+  { id:6,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Nystatin Oral Drops",          pack:"30ml",     qty:10,  unitPrice:67.26,     disc:5,  total:639,   status:"matched",  notes:"" },
+  { id:7,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"KLY Lubricating Gel",          pack:"42g",      qty:4,   unitPrice:310.00,    disc:5,  total:1178,  status:"matched",  notes:"" },
+  { id:8,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Montalerg Tabs",               pack:"20s",      qty:10,  unitPrice:1270.00,   disc:15, total:10795, status:"matched",  notes:"" },
+  { id:9,  inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Robidom SR Caps",              pack:"30s",      qty:4,   unitPrice:3100.00,   disc:10, total:11160, status:"matched",  notes:"" },
+  { id:10, inv:"SNV00270189", date:"2026-06-04", vendorId:1, name:"Surgical Gloves Size 7.5",     pack:"pair",     qty:10,  unitPrice:40.00,     disc:15, total:340,   status:"matched",  notes:"" },
+  // Bilova SNV00270279 — 05 Jun
+  { id:11, inv:"SNV00270279", date:"2026-06-05", vendorId:1, name:"Taxim O (Cefixime) 200mg",     pack:"10s",      qty:10,  unitPrice:1200.00,   disc:20, total:9600,  status:"matched",  notes:"" },
+  { id:12, inv:"SNV00270279", date:"2026-06-05", vendorId:1, name:"Dexamethasone Inj 4mg/1ml",    pack:"1ml",      qty:10,  unitPrice:12.00,     disc:10, total:108,   status:"matched",  notes:"" },
+  { id:13, inv:"SNV00270279", date:"2026-06-05", vendorId:1, name:"Surgical Gloves Size 7.5",     pack:"pair",     qty:10,  unitPrice:40.00,     disc:15, total:340,   status:"matched",  notes:"" },
+  { id:14, inv:"SNV00270279", date:"2026-06-05", vendorId:1, name:"Dextrose 10% Infusion",        pack:"500ml",    qty:10,  unitPrice:105.05,    disc:5,  total:998,   status:"matched",  notes:"" },
+  // Bilova SNV00270401 — 08 Jun ⚠ No LPO
+  { id:15, inv:"SNV00270401", date:"2026-06-08", vendorId:1, name:"Rontus 650",                   pack:"10s",      qty:30,  unitPrice:null,      disc:null,total:3416, status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:16, inv:"SNV00270401", date:"2026-06-08", vendorId:1, name:"Gastroplus Caps",              pack:"10s",      qty:20,  unitPrice:null,      disc:null,total:13320,status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  // Eastleigh SNV90007350 — 04 Jun
+  { id:17, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Amoxil Syrup Forte 250mg",     pack:"100ml",    qty:10,  unitPrice:659.00,    disc:20, total:5272,  status:"matched",  notes:"" },
+  { id:18, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Augmentin BD Syrup 228mg",     pack:"70ml",     qty:10,  unitPrice:759.25,    disc:20, total:6074,  status:"matched",  notes:"" },
+  { id:19, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Augmentin BD Syrup 457mg",     pack:"70ml",     qty:10,  unitPrice:1185.75,   disc:13, total:10316, status:"matched",  notes:"" },
+  { id:20, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Augmentin BD Tablets 1gm",     pack:"14s",      qty:1,   unitPrice:1890.00,   disc:0,  total:1890,  status:"matched",  notes:"" },
+  { id:21, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Merozip IV 500mg",             pack:"5s",       qty:5,   unitPrice:520.00,    disc:20, total:2080,  status:"matched",  notes:"" },
+  { id:22, inv:"SNV90007350", date:"2026-06-04", vendorId:2, name:"Zupricin Ointment",            pack:"15g",      qty:15,  unitPrice:594.98,    disc:10, total:8032,  status:"matched",  notes:"" },
+  // Eastleigh SNV90007371 — 05 Jun
+  { id:23, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Altacef 500mg (Cefuroxime)",   pack:"10s",      qty:5,   unitPrice:1056.89,   disc:10, total:4756,  status:"matched",  notes:"" },
+  { id:24, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Branular IV Cannula G24",      pack:"each",     qty:200, unitPrice:12.00,     disc:0,  total:2400,  status:"matched",  notes:"" },
+  { id:25, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Crepe Bandage 4\"",            pack:"roll",     qty:48,  unitPrice:30.00,     disc:0,  total:1440,  status:"matched",  notes:"" },
+  { id:26, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Crepe Bandage 6\"",            pack:"roll",     qty:48,  unitPrice:40.00,     disc:0,  total:1920,  status:"matched",  notes:"" },
+  { id:27, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Crepe Bandage 2\"",            pack:"roll",     qty:48,  unitPrice:20.00,     disc:0,  total:960,   status:"matched",  notes:"" },
+  { id:28, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Desteluk 10",                  pack:"30s",      qty:10,  unitPrice:2400.00,   disc:5,  total:22800, status:"matched",  notes:"" },
+  { id:29, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Norash Cream",                 pack:"tube",     qty:5,   unitPrice:330.00,    disc:10, total:1485,  status:"matched",  notes:"" },
+  { id:30, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Nurses Caps Blue",             pack:"100s",     qty:2,   unitPrice:665.79,    disc:5,  total:1265,  status:"matched",  notes:"" },
+  { id:31, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Panadol Advance",              pack:"100s",     qty:4,   unitPrice:585.00,    disc:5,  total:2340,  status:"matched",  notes:"" },
+  { id:32, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Powergesic Plus Gel 30gm",     pack:"tube",     qty:15,  unitPrice:240.00,    disc:15, total:3060,  status:"matched",  notes:"" },
+  { id:33, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Pulmocef 500mg Tabs",          pack:"10s",      qty:10,  unitPrice:250.00,    disc:10, total:2250,  status:"matched",  notes:"" },
+  { id:34, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Rufenac Gel 20g (Diclofenac)", pack:"tube",     qty:20,  unitPrice:25.00,     disc:0,  total:500,   status:"matched",  notes:"" },
+  { id:35, inv:"SNV90007371", date:"2026-06-05", vendorId:2, name:"Transpore 1\"",                pack:"roll",     qty:4,   unitPrice:50.00,     disc:0,  total:200,   status:"matched",  notes:"" },
+  // Eastleigh SNV90007385 — 06 Jun
+  { id:36, inv:"SNV90007385", date:"2026-06-06", vendorId:2, name:"Enzoflam 560mg",              pack:"3x10",     qty:10,  unitPrice:1150.00,   disc:0,  total:11500, status:"matched",  notes:"" },
+  { id:37, inv:"SNV90007385", date:"2026-06-06", vendorId:2, name:"Hemoforce Family Syrup",      pack:"200ml",    qty:6,   unitPrice:207.65,    disc:15, total:1059,  status:"matched",  notes:"" },
+  { id:38, inv:"SNV90007385", date:"2026-06-06", vendorId:2, name:"Ocid Caps 20mg",              pack:"100s",     qty:10,  unitPrice:204.00,    disc:5,  total:1938,  status:"matched",  notes:"" },
+  { id:39, inv:"SNV90007385", date:"2026-06-06", vendorId:2, name:"Pantocid Tabs 40mg",          pack:"50s",      qty:3,   unitPrice:1920.00,   disc:15, total:4896,  status:"matched",  notes:"" },
+  // Eastleigh SNV90007407 — 08 Jun ⚠ No LPO
+  { id:40, inv:"SNV90007407", date:"2026-06-08", vendorId:2, name:"Cotton Wool 400gm",           pack:"bag",      qty:4,   unitPrice:318.61,    disc:10, total:1147,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:41, inv:"SNV90007407", date:"2026-06-08", vendorId:2, name:"Gauze Roll 90cm x100 1.5kg",  pack:"roll",     qty:4,   unitPrice:1500.00,   disc:20, total:4800,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  // Eastleigh SNV90007422 — 09 Jun
+  { id:42, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Atorid 20mg Tabs",            pack:"30s",      qty:2,   unitPrice:1350.00,   disc:5,  total:2565,  status:"partial",  notes:"Partial — 4 more on SNV90007450" },
+  { id:43, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Augmentin BD Syrup 228mg",    pack:"70ml",     qty:15,  unitPrice:759.29,    disc:25, total:8542,  status:"matched",  notes:"" },
+  { id:44, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Augmentin BD Tablets 625mg",  pack:"14s",      qty:10,  unitPrice:1130.00,   disc:0,  total:11300, status:"matched",  notes:"" },
+  { id:45, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Cipladon 1000mg",             pack:"8s",       qty:10,  unitPrice:361.11,    disc:10, total:3250,  status:"partial",  notes:"Partial — more on SNV90007455" },
+  { id:46, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Cipladon 500mg",              pack:"16s",      qty:5,   unitPrice:361.11,    disc:10, total:1625,  status:"partial",  notes:"Partial — balance outstanding" },
+  { id:47, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Clamoxin 625mg Tabs",         pack:"10s",      qty:10,  unitPrice:324.94,    disc:15, total:2762,  status:"matched",  notes:"" },
+  { id:48, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Emitino 4mg Tabs",            pack:"10s",      qty:10,  unitPrice:550.00,    disc:20, total:4400,  status:"excess",   notes:"⚠ 8 extra units vs LPO quantity" },
+  { id:49, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Etorix 90mg",                 pack:"30s",      qty:4,   unitPrice:1903.93,   disc:30, total:5331,  status:"partial",  notes:"Partial — 2 more on SNV90007450" },
+  { id:50, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Losartas HT Tabs",            pack:"30s",      qty:4,   unitPrice:950.00,    disc:12.5,total:3325, status:"discrepancy",notes:"Pack size diff — 20 tabs short" },
+  { id:51, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Nebulizer Mask Adult",        pack:"each",     qty:20,  unitPrice:85.00,     disc:0,  total:1700,  status:"matched",  notes:"" },
+  { id:52, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Nebulizer Mask Paed",         pack:"each",     qty:20,  unitPrice:85.00,     disc:0,  total:1700,  status:"matched",  notes:"" },
+  { id:53, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Needles G21",                 pack:"100s",     qty:10,  unitPrice:105.00,    disc:0,  total:1050,  status:"matched",  notes:"" },
+  { id:54, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Needles G23",                 pack:"100s",     qty:10,  unitPrice:105.00,    disc:0,  total:1050,  status:"matched",  notes:"" },
+  { id:55, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Nexium Sachets 10mg",         pack:"28s",      qty:2,   unitPrice:6535.04,   disc:31.5,total:8953, status:"partial",  notes:"Partial — 8 packets outstanding" },
+  { id:56, inv:"SNV90007422", date:"2026-06-09", vendorId:2, name:"Sabezole-DSR",                pack:"10s",      qty:10,  unitPrice:600.00,    disc:10, total:5400,  status:"matched",  notes:"" },
+  // Eastleigh SNV90007427 — 09 Jun ⚠ No LPO + return
+  { id:57, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Amtel 45mg (RETURNED)",       pack:"30s",      qty:1,   unitPrice:2210.53,   disc:5,  total:-2100, status:"returned", notes:"Returned — credit note due from supplier" },
+  { id:58, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Giving Set",                  pack:"each",     qty:300, unitPrice:13.00,     disc:0,  total:3900,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:59, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Labetalol Inj 100mg/20ml",    pack:"1s",       qty:10,  unitPrice:2100.00,   disc:22.5,total:16275,status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:60, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Mucosolvan Liq 15mg/5ml",     pack:"100ml",    qty:5,   unitPrice:788.32,    disc:7.5,total:3646,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:61, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Rocephin IV 1gm",             pack:"1s",       qty:12,  unitPrice:1740.00,   disc:5,  total:19836, status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:62, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Solusets 150ml",              pack:"each",     qty:100, unitPrice:75.00,     disc:0,  total:7500,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:63, inv:"SNV90007427", date:"2026-06-09", vendorId:2, name:"Taximo O 200mg / Cefixime",   pack:"10s",      qty:20,  unitPrice:1150.00,   disc:20, total:18400, status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  // Eastleigh SNV90007450 — 10 Jun
+  { id:64, inv:"SNV90007450", date:"2026-06-10", vendorId:2, name:"Atorid 20mg Tabs (late)",     pack:"30s",      qty:4,   unitPrice:1350.00,   disc:5,  total:5130,  status:"late",     notes:"Late delivery against 9/6 LPO" },
+  { id:65, inv:"SNV90007450", date:"2026-06-10", vendorId:2, name:"Etorix 90mg (late)",          pack:"30s",      qty:2,   unitPrice:1904.29,   disc:30, total:2666,  status:"late",     notes:"Late delivery — 9/6 LPO — now complete" },
+  { id:66, inv:"SNV90007450", date:"2026-06-10", vendorId:2, name:"Otrivin Adult Drops 0.10%",   pack:"10ml",     qty:1,   unitPrice:734.74,    disc:5,  total:698,   status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  // Eastleigh SNV90007455 — 10 Jun
+  { id:67, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Alzolam 0.5mg Tabs",          pack:"30s",      qty:4,   unitPrice:1350.00,   disc:10, total:4860,  status:"matched",  notes:"10/6 LPO" },
+  { id:68, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Bennetts Saline Nose Spray",  pack:"each",     qty:4,   unitPrice:957.89,    disc:5,  total:3640,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:69, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Candid B Cream 15gm",         pack:"tube",     qty:10,  unitPrice:222.00,    disc:10, total:1998,  status:"matched",  notes:"10/6 LPO" },
+  { id:70, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Cipladon 1000mg (late)",      pack:"8s",       qty:30,  unitPrice:361.07,    disc:10, total:9749,  status:"partial",  notes:"Late delivery — 9/6 LPO — still short" },
+  { id:71, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Ciproken Eye/Ear Drops",      pack:"5ml",      qty:10,  unitPrice:120.00,    disc:10, total:1080,  status:"matched",  notes:"10/6 LPO" },
+  { id:72, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Lantus Solostar 3ml 5-pen",   pack:"pen",      qty:1,   unitPrice:10470.59,  disc:15, total:8900,  status:"partial",  notes:"Partial — 4 pens outstanding" },
+  { id:73, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Nexium 40mg Tabs",            pack:"14s",      qty:4,   unitPrice:740.00,    disc:0,  total:2960,  status:"matched",  notes:"10/6 LPO" },
+  { id:74, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Normal Saline Drops (Nosfree)",pack:"each",    qty:10,  unitPrice:25.00,     disc:0,  total:250,   status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:75, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"On Call Plus Strips",         pack:"50s",      qty:10,  unitPrice:600.00,    disc:0,  total:6000,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:76, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Pediasure Nutri Vanilla",     pack:"400g",     qty:3,   unitPrice:1899.88,   disc:5,  total:6281,  status:"no_lpo",   notes:"No matching LPO — authorisation required" },
+  { id:77, inv:"SNV90007455", date:"2026-06-10", vendorId:2, name:"Ventolin Evohaler 200 dose",  pack:"inhaler",  qty:6,   unitPrice:500.00,    disc:0,  total:3000,  status:"excess",   notes:"⚠ 1 extra unit vs LPO qty of 5" },
+];
+
+const STATUS_META = {
+  matched:     { label:"✓ Matched",        color:"green" },
+  no_lpo:      { label:"⚠ No LPO",         color:"red"   },
+  partial:     { label:"◑ Partial",        color:"amber" },
+  excess:      { label:"↑ Excess",         color:"amber" },
+  discrepancy: { label:"≠ Discrepancy",    color:"amber" },
+  returned:    { label:"↩ Returned",       color:"gray"  },
+  late:        { label:"⏱ Late Delivery",  color:"blue"  },
+};
+
+const INVOICES = [
+  { inv:"SNV00270189", vendorId:1, date:"2026-06-04", subtotal:47570  },
+  { inv:"SNV00270279", vendorId:1, date:"2026-06-05", subtotal:11046  },
+  { inv:"SNV00270401", vendorId:1, date:"2026-06-08", subtotal:16736, flag:"no_lpo"  },
+  { inv:"SNV90007350", vendorId:2, date:"2026-06-04", subtotal:33664  },
+  { inv:"SNV90007371", vendorId:2, date:"2026-06-05", subtotal:45376  },
+  { inv:"SNV90007385", vendorId:2, date:"2026-06-06", subtotal:19393  },
+  { inv:"SNV90007407", vendorId:2, date:"2026-06-08", subtotal:5947,  flag:"no_lpo"  },
+  { inv:"SNV90007422", vendorId:2, date:"2026-06-09", subtotal:68353  },
+  { inv:"SNV90007427", vendorId:2, date:"2026-06-09", subtotal:69557, flag:"no_lpo"  },
+  { inv:"SNV90007450", vendorId:2, date:"2026-06-10", subtotal:8494   },
+  { inv:"SNV90007455", vendorId:2, date:"2026-06-10", subtotal:48718  },
+];
+
+function Badge({ color, text }) {
+  const s = { green:["#e6f4ea","#2d6a4f"], red:["#fdecea","#a61c00"], amber:["#fff3e0","#7c4d00"], blue:["#e3f2fd","#0d47a1"], gray:["#f1f0eb","#5a5955"] }[color]||["#f1f0eb","#5a5955"];
+  return <span style={{ background:s[0], color:s[1], padding:"2px 9px", borderRadius:12, fontSize:12, fontWeight:500, whiteSpace:"nowrap" }}>{text}</span>;
+}
+function Card({ children, style }) {
+  return <div style={{ background:"var(--color-background-primary)", border:"0.5px solid var(--color-border-tertiary)", borderRadius:12, padding:"1rem 1.25rem", ...style }}>{children}</div>;
+}
+function Metric({ label, value, sub, color }) {
+  const c = { green:"#2d6a4f", red:"#a61c00", amber:"#7c4d00" }[color]||"var(--color-text-primary)";
+  return (
+    <div style={{ background:"var(--color-background-secondary)", borderRadius:8, padding:"0.9rem" }}>
+      <div style={{ fontSize:12, color:"var(--color-text-secondary)", marginBottom:4 }}>{label}</div>
+      <div style={{ fontSize:20, fontWeight:500, color:c }}>{value}</div>
+      {sub && <div style={{ fontSize:11, color:"var(--color-text-secondary)", marginTop:2 }}>{sub}</div>}
+    </div>
+  );
+}
+
+export default function App() {
+  const [tab, setTab] = useState("Dashboard");
+  const noLpo = initItems.filter(i => i.status === "no_lpo");
+  const flags = initItems.filter(i => !["matched","returned"].includes(i.status));
+  return (
+    <div style={{ fontFamily:"var(--font-sans)", paddingBottom:"2rem" }}>
+      <div style={{ background:"var(--color-background-primary)", borderBottom:"0.5px solid var(--color-border-tertiary)", padding:"1rem 1.5rem", display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ width:36, height:36, borderRadius:8, background:"#1d6fa4", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>💊</div>
+        <div>
+          <div style={{ fontWeight:600, fontSize:16 }}>PharManager</div>
+          <div style={{ fontSize:12, color:"var(--color-text-secondary)" }}>Goods Received Register · 4–10 June 2026</div>
+        </div>
+        {noLpo.length > 0 && <div style={{ marginLeft:"auto" }}><Badge color="red" text={`⚠ ${noLpo.length} items need auth`}/></div>}
+      </div>
+      <div style={{ display:"flex", gap:2, padding:"0.6rem 1.5rem 0", overflowX:"auto", borderBottom:"0.5px solid var(--color-border-tertiary)", background:"var(--color-background-primary)" }}>
+        {TABS.map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{ padding:"6px 13px", borderRadius:"6px 6px 0 0", border:"none", cursor:"pointer", fontSize:13, background:tab===t?"var(--color-background-secondary)":"transparent", color:tab===t?"var(--color-text-primary)":"var(--color-text-secondary)", fontWeight:tab===t?500:400, borderBottom:tab===t?"2px solid #1d6fa4":"none", whiteSpace:"nowrap" }}>{t}</button>
+        ))}
+      </div>
+      <div style={{ padding:"1.25rem" }}>
+        {tab === "Dashboard"       && <Dashboard items={initItems} vendors={initVendors} invoices={INVOICES} />}
+        {tab === "Goods Received"  && <GoodsReceived items={initItems} vendors={initVendors} />}
+        {tab === "Inventory"       && <Inventory items={initItems} />}
+        {tab === "Orders"          && <OrdersTab invoices={INVOICES} vendors={initVendors} items={initItems} />}
+        {tab === "Vendors"         && <VendorTab vendors={initVendors} items={initItems} invoices={INVOICES} />}
+        {tab === "Flags & Actions" && <FlagsTab items={initItems} vendors={initVendors} />}
+      </div>
+    </div>
+  );
+}
+
+function Dashboard({ items, vendors, invoices }) {
+  const total = 375854;
+  const bilova = items.filter(i=>i.vendorId===1).reduce((s,i)=>s+Math.abs(i.total),0);
+  const east = items.filter(i=>i.vendorId===2).reduce((s,i)=>s+Math.abs(i.total),0);
+  const noLpo = items.filter(i=>i.status==="no_lpo");
+  const noLpoValue = noLpo.reduce((s,i)=>s+i.total,0);
+  const partial = items.filter(i=>i.status==="partial");
+  const flags = items.filter(i=>!["matched","returned"].includes(i.status));
+  const creditDue = Math.abs(items.find(i=>i.status==="returned")?.total||0);
+  return (
+    <div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:10, marginBottom:16 }}>
+        <Metric label="Total Invoiced" value={`KES ${total.toLocaleString()}`} />
+        <Metric label="Bilova Chemists" value={`KES ${bilova.toLocaleString()}`} sub="2 suppliers" />
+        <Metric label="Eastleigh Pharma" value={`KES ${east.toLocaleString()}`} />
+        <Metric label="No-LPO Value" value={`KES ${noLpoValue.toLocaleString()}`} color="red" sub={`${noLpo.length} items`} />
+        <Metric label="Partial Deliveries" value={partial.length} color="amber" sub="follow-up needed" />
+        <Metric label="Credit Note Due" value={`KES ${creditDue.toLocaleString()}`} color="amber" sub="Amtel 45mg return" />
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+        <Card>
+          <div style={{ fontWeight:500, marginBottom:10 }}>Invoices by Supplier</div>
+          {invoices.map(inv => {
+            const vname = vendors.find(v=>v.id===inv.vendorId)?.name.split(" ")[0];
+            return (
+              <div key={inv.inv} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0", borderBottom:"0.5px solid var(--color-border-tertiary)", fontSize:13 }}>
+                <span style={{ color:"var(--color-text-secondary)", fontFamily:"monospace", fontSize:12 }}>{inv.inv}</span>
+                <span style={{ color:"var(--color-text-secondary)", fontSize:12 }}>{vname} · {inv.date.slice(5)}</span>
+                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                  <span style={{ fontWeight:500 }}>KES {inv.subtotal.toLocaleString()}</span>
+                  {inv.flag && <Badge color="red" text="No LPO" />}
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+        <Card>
+          <div style={{ fontWeight:500, marginBottom:10 }}>Items Requiring Action</div>
+          {[
+            { label:"No LPO — Auth needed", count:noLpo.length, color:"red" },
+            { label:"Partial deliveries", count:partial.length, color:"amber" },
+            { label:"Excess vs LPO", count:items.filter(i=>i.status==="excess").length, color:"amber" },
+            { label:"Discrepancies", count:items.filter(i=>i.status==="discrepancy").length, color:"amber" },
+            { label:"Late deliveries", count:items.filter(i=>i.status==="late").length, color:"blue" },
+            { label:"Returns (credit due)", count:1, color:"gray" },
+          ].map(r => (
+            <div key={r.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0", borderBottom:"0.5px solid var(--color-border-tertiary)", fontSize:13 }}>
+              <span>{r.label}</span>
+              <Badge color={r.color} text={r.count} />
+            </div>
+          ))}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function GoodsReceived({ items, vendors }) {
+  const [selVendor, setSelVendor] = useState("All");
+  const [selInv, setSelInv] = useState("All");
+  const [selStatus, setSelStatus] = useState("All");
+  const [search, setSearch] = useState("");
+  const invs = ["All", ...new Set(items.map(i=>i.inv))];
+  let filtered = items
+    .filter(i => selVendor==="All" || i.vendorId===Number(selVendor))
+    .filter(i => selInv==="All" || i.inv===selInv)
+    .filter(i => selStatus==="All" || i.status===selStatus)
+    .filter(i => i.name.toLowerCase().includes(search.toLowerCase()));
+  const grandTotal = filtered.reduce((s,i)=>s+i.total,0);
+  return (
+    <div>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:12 }}>
+        <input placeholder="Search items…" value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1, minWidth:120 }} />
+        <select value={selVendor} onChange={e=>setSelVendor(e.target.value)}>
+          <option value="All">All Suppliers</option>
+          {vendors.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}
+        </select>
+        <select value={selInv} onChange={e=>setSelInv(e.target.value)}>
+          {invs.map(i=><option key={i}>{i}</option>)}
+        </select>
+        <select value={selStatus} onChange={e=>setSelStatus(e.target.value)}>
+          <option value="All">All Statuses</option>
+          {Object.entries(STATUS_META).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+        </select>
+      </div>
+      <div style={{ overflowX:"auto" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+          <thead>
+            <tr style={{ background:"var(--color-background-secondary)" }}>
+              {["Date","Invoice","Supplier","Item","Pack","Qty","Unit Price","Disc%","Total (KES)","Status","Notes"].map(h=>(
+                <th key={h} style={{ padding:"7px 9px", fontWeight:500, color:"var(--color-text-secondary)", fontSize:11, textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(item => {
+              const sm = STATUS_META[item.status];
+              const rowBg = item.status==="no_lpo" ? "#fffdf0" : item.status==="returned" ? "#f9f0f0" : "transparent";
+              return (
+                <tr key={item.id} style={{ borderBottom:"0.5px solid var(--color-border-tertiary)", background:rowBg }}>
+                  <td style={{ padding:"6px 9px", color:"var(--color-text-secondary)", whiteSpace:"nowrap" }}>{item.date.slice(5)}</td>
+                  <td style={{ padding:"6px 9px", fontFamily:"monospace", fontSize:11, color:"var(--color-text-secondary)" }}>{item.inv}</td>
+                  <td style={{ padding:"6px 9px", fontSize:11, color:"var(--color-text-secondary)", whiteSpace:"nowrap" }}>{vendors.find(v=>v.id===item.vendorId)?.name.split(" ")[0]}</td>
+                  <td style={{ padding:"6px 9px", fontWeight:500 }}>{item.name}</td>
+                  <td style={{ padding:"6px 9px", color:"var(--color-text-secondary)" }}>{item.pack}</td>
+                  <td style={{ padding:"6px 9px", textAlign:"right" }}>{item.qty}</td>
+                  <td style={{ padding:"6px 9px", textAlign:"right" }}>{item.unitPrice ? item.unitPrice.toFixed(2) : "—"}</td>
+                  <td style={{ padding:"6px 9px", textAlign:"right" }}>{item.disc != null && item.disc > 0 ? item.disc+"%" : "—"}</td>
+                  <td style={{ padding:"6px 9px", textAlign:"right", fontWeight:500, color:item.total<0?"#a61c00":"inherit" }}>{item.total.toLocaleString()}</td>
+                  <td style={{ padding:"6px 9px" }}><Badge color={sm.color} text={sm.label} /></td>
+                  <td style={{ padding:"6px 9px", fontSize:11, color:"var(--color-text-secondary)", maxWidth:180 }}>{item.notes}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr style={{ background:"var(--color-background-secondary)", fontWeight:600 }}>
+              <td colSpan={8} style={{ padding:"7px 9px", textAlign:"right" }}>Total ({filtered.length} items):</td>
+              <td style={{ padding:"7px 9px", textAlign:"right" }}>KES {grandTotal.toLocaleString()}</td>
+              <td colSpan={2} />
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Inventory({ items }) {
+  const [search, setSearch] = useState("");
+  // Aggregate by item name (simplistic — real system would use drug codes)
+  const agg = {};
+  items.filter(i=>i.status!=="returned").forEach(i => {
+    const k = i.name.replace(/ \(late\)| \(RETURNED\)/g,"").trim();
+    if (!agg[k]) agg[k] = { name:k, qty:0, totalCost:0, pack:i.pack };
+    agg[k].qty += i.qty;
+    agg[k].totalCost += Math.abs(i.total);
+  });
+  const rows = Object.values(agg)
+    .filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a,b) => b.totalCost - a.totalCost);
+  return (
+    <div>
+      <div style={{ marginBottom:12 }}>
+        <input placeholder="Search drug/item…" value={search} onChange={e=>setSearch(e.target.value)} style={{ width:"100%", boxSizing:"border-box" }} />
+      </div>
+      <div style={{ overflowX:"auto" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+          <thead>
+            <tr style={{ background:"var(--color-background-secondary)" }}>
+              {["Item Name","Pack","Units Received","Total Cost (KES)","Avg Unit Cost"].map(h=>(
+                <th key={h} style={{ padding:"7px 9px", fontWeight:500, color:"var(--color-text-secondary)", fontSize:11, textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r,i) => (
+              <tr key={i} style={{ borderBottom:"0.5px solid var(--color-border-tertiary)" }}>
+                <td style={{ padding:"6px 9px", fontWeight:500 }}>{r.name}</td>
+                <td style={{ padding:"6px 9px", color:"var(--color-text-secondary)" }}>{r.pack}</td>
+                <td style={{ padding:"6px 9px", textAlign:"right" }}>{r.qty}</td>
+                <td style={{ padding:"6px 9px", textAlign:"right", fontWeight:500 }}>KES {r.totalCost.toLocaleString()}</td>
+                <td style={{ padding:"6px 9px", textAlign:"right", color:"var(--color-text-secondary)" }}>KES {(r.totalCost/r.qty).toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function OrdersTab({ invoices, vendors, items }) {
+  return (
+    <div>
+      {invoices.map(inv => {
+        const vname = vendors.find(v=>v.id===inv.vendorId)?.name;
+        const invItems = items.filter(i=>i.inv===inv.inv);
+        const hasFlag = inv.flag==="no_lpo";
+        return (
+          <Card key={inv.inv} style={{ marginBottom:12, border:hasFlag?"1.5px solid #e24b4a":undefined }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:8, marginBottom:10 }}>
+              <div>
+                <div style={{ fontWeight:600, fontFamily:"monospace" }}>{inv.inv}</div>
+                <div style={{ fontSize:13, color:"var(--color-text-secondary)" }}>{vname} · {inv.date}</div>
+              </div>
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                <span style={{ fontWeight:500 }}>KES {inv.subtotal.toLocaleString()}</span>
+                {hasFlag ? <Badge color="red" text="⚠ No Matching LPO" /> : <Badge color="green" text="LPO Matched" />}
+              </div>
+            </div>
+            <div style={{ fontSize:12, color:"var(--color-text-secondary)" }}>
+              {invItems.map(i => {
+                const sm = STATUS_META[i.status];
+                return (
+                  <div key={i.id} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:"0.5px solid var(--color-border-tertiary)", gap:8 }}>
+                    <span>{i.name}</span>
+                    <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                      <span>Qty {i.qty} · KES {Math.abs(i.total).toLocaleString()}</span>
+                      <Badge color={sm.color} text={sm.label} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function VendorTab({ vendors, items, invoices }) {
+  return (
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:14 }}>
+      {vendors.map(v => {
+        const vItems = items.filter(i=>i.vendorId===v.id);
+        const vTotal = vItems.reduce((s,i)=>s+Math.abs(i.total),0);
+        const vInvs = invoices.filter(i=>i.vendorId===v.id);
+        const noLpoInvs = vInvs.filter(i=>i.flag==="no_lpo");
+        return (
+          <Card key={v.id}>
+            <div style={{ fontWeight:600, fontSize:15, marginBottom:8 }}>{v.name}</div>
+            <div style={{ fontSize:13, color:"var(--color-text-secondary)", lineHeight:1.8 }}>
+              <div>📍 {v.contact}</div>
+              <div>🔢 PIN: {v.pin}</div>
+              {v.vat && <div>💼 VAT: {v.vat}</div>}
+              {v.till && <div>🧾 Till: {v.till}</div>}
+              <div>💳 {v.paymentTerms}</div>
+            </div>
+            <div style={{ marginTop:12, paddingTop:10, borderTop:"0.5px solid var(--color-border-tertiary)" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13 }}>
+                <span style={{ color:"var(--color-text-secondary)" }}>Invoices this period</span>
+                <span style={{ fontWeight:500 }}>{vInvs.length}</span>
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginTop:4 }}>
+                <span style={{ color:"var(--color-text-secondary)" }}>Total value</span>
+                <span style={{ fontWeight:500 }}>KES {vTotal.toLocaleString()}</span>
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginTop:4 }}>
+                <span style={{ color:"var(--color-text-secondary)" }}>No-LPO invoices</span>
+                {noLpoInvs.length > 0 ? <Badge color="red" text={noLpoInvs.length} /> : <Badge color="green" text="None" />}
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function FlagsTab({ items, vendors }) {
+  const sections = [
+    { title:"⚠ No Matching LPO — Authorisation Required", filter: i=>i.status==="no_lpo", color:"red", desc:"These items were delivered without a corresponding Local Purchase Order. Payment must not proceed until authorised." },
+    { title:"◑ Partial Deliveries — Follow-up Required", filter: i=>i.status==="partial", color:"amber", desc:"Balance quantities are outstanding. Follow up with supplier for fulfilment." },
+    { title:"↑ Excess Quantities Received", filter: i=>i.status==="excess", color:"amber", desc:"Quantities received exceed LPO quantities. Verify before accepting into stock." },
+    { title:"≠ Discrepancies", filter: i=>i.status==="discrepancy", color:"amber", desc:"Pack size or quantity differences detected versus LPO." },
+    { title:"⏱ Late Deliveries", filter: i=>i.status==="late", color:"blue", desc:"Items delivered after expected date but now matched to LPO." },
+    { title:"↩ Returns — Credit Note Pending", filter: i=>i.status==="returned", color:"gray", desc:"Items returned to supplier. Ensure credit note is received and reconciled." },
+  ];
+  const noLpoTotal = items.filter(i=>i.status==="no_lpo").reduce((s,i)=>s+i.total,0);
+  return (
+    <div>
+      <Card style={{ marginBottom:14, border:"1.5px solid #e24b4a" }}>
+        <div style={{ fontWeight:600, color:"#a61c00", marginBottom:4 }}>Total Unauthorised Value (No-LPO items)</div>
+        <div style={{ fontSize:22, fontWeight:600 }}>KES {noLpoTotal.toLocaleString()}</div>
+        <div style={{ fontSize:13, color:"var(--color-text-secondary)", marginTop:4 }}>Spread across 4 invoices — SNV00270401, SNV90007407, SNV90007427, SNV90007450/55 lines</div>
+      </Card>
+      {sections.map(s => {
+        const rows = items.filter(s.filter);
+        if (!rows.length) return null;
+        return (
+          <Card key={s.title} style={{ marginBottom:12 }}>
+            <div style={{ fontWeight:600, marginBottom:4 }}>{s.title}</div>
+            <div style={{ fontSize:12, color:"var(--color-text-secondary)", marginBottom:10 }}>{s.desc}</div>
+            {rows.map(item => (
+              <div key={item.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", padding:"6px 0", borderBottom:"0.5px solid var(--color-border-tertiary)", fontSize:13, flexWrap:"wrap", gap:6 }}>
+                <div>
+                  <div style={{ fontWeight:500 }}>{item.name}</div>
+                  <div style={{ fontSize:11, color:"var(--color-text-secondary)" }}>{item.inv} · {vendors.find(v=>v.id===item.vendorId)?.name.split(" ")[0]} · {item.date.slice(5)} · Qty {item.qty}</div>
+                  {item.notes && <div style={{ fontSize:11, color:"#7c4d00", marginTop:2 }}>{item.notes}</div>}
+                </div>
+                <div style={{ fontWeight:500 }}>KES {Math.abs(item.total).toLocaleString()}</div>
+              </div>
+            ))}
+            <div style={{ textAlign:"right", fontWeight:600, fontSize:13, marginTop:8 }}>
+              Subtotal: KES {rows.reduce((s,i)=>s+Math.abs(i.total),0).toLocaleString()}
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
